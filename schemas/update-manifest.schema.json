@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lixinchen.ca/schemas/mlccs-videosearch/update-manifest-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "appVersion", "minimumCompatibleVersion", "downloadUrl", "size", "sha256", "archiveSignature", "publishedUtc", "releaseNotes", "mandatory", "manifestSignature"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "appVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$" },
+    "minimumCompatibleVersion": { "type": "string" },
+    "downloadUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "size": { "type": "integer", "minimum": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "archiveSignature": { "type": "string", "contentEncoding": "base64" },
+    "publishedUtc": { "type": "string", "format": "date-time" },
+    "releaseNotes": { "type": "string", "maxLength": 10000 },
+    "mandatory": { "type": "boolean" },
+    "manifestSignature": { "type": "string", "contentEncoding": "base64" }
+  }
+}
+

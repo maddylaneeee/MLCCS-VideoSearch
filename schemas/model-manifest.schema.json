@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lixinchen.ca/schemas/mlccs-videosearch/model-manifest-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedUtc", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedUtc": { "type": "string", "format": "date-time" },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "repository", "commit", "license", "fileCount", "diskBytes"],
+        "properties": {
+          "id": { "type": "string" }, "repository": { "type": "string" },
+          "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }, "license": { "type": "string" },
+          "fileCount": { "type": "integer", "minimum": 1 }, "diskBytes": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "kind", "version", "filename", "installPath", "size", "sha256", "primaryUrl", "fallbackUrls", "license", "vectorDimension", "minimumWorkerVersion", "recommendedVramBytes", "diskBytes"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$" },
+          "kind": { "enum": ["runtime", "tool", "visual", "speech", "text", "ocr", "vector-db", "player"] },
+          "version": { "type": "string", "minLength": 1 },
+          "filename": { "type": "string", "pattern": "^[^/\\\\]+$" },
+          "installPath": { "type": "string", "pattern": "^(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+$" },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "primaryUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+          "fallbackUrls": { "type": "array", "items": { "type": "string", "format": "uri", "pattern": "^https://" } },
+          "license": { "type": "string", "minLength": 1 },
+          "vectorDimension": { "type": ["integer", "null"], "minimum": 1 },
+          "minimumWorkerVersion": { "type": "string" },
+          "recommendedVramBytes": { "type": "integer", "minimum": 0 },
+          "diskBytes": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

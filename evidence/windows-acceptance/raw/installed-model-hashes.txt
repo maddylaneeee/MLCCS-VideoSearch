@@ -1,0 +1,7 @@
+
+Name                             Bytes SHA256
+----                             ----- ------
+open_clip_pytorch_model.bin 1464635263 a5412f19cca70db8d434f68361f7254bd322a553455a63dbb709bd6a650cf378
+preprocessor_config.json           315 0a70aaa5de2ccb5e222b0e7e3ea347a3da051c3588c763cdd23b4d80bbf96b65
+tokenizer.json                 9096718 a898ea75433890f6610f4e470b8ebeb0c21dce5c8dd61f892eb09eb5919d2e2c
+

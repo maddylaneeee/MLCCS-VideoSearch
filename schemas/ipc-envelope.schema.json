@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lixinchen.ca/schemas/mlccs-videosearch/ipc-envelope-v1.json",
+  "title": "MLCCS Video Search IPC envelope v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["protocolVersion", "requestId", "timestampUtc", "kind", "stage", "progress", "recoverable"],
+  "properties": {
+    "protocolVersion": { "const": "1.0" },
+    "requestId": { "type": "string", "format": "uuid" },
+    "taskId": { "type": ["string", "null"], "format": "uuid" },
+    "timestampUtc": { "type": "string", "format": "date-time" },
+    "kind": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "stage": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "progress": { "type": "number", "minimum": 0, "maximum": 1 },
+    "recoverable": { "type": "boolean" },
+    "error": {
+      "type": ["object", "null"],
+      "required": ["code", "summary"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,79}$" },
+        "summary": { "type": "string", "maxLength": 500 },
+        "remediation": { "type": ["string", "null"], "maxLength": 1000 }
+      },
+      "additionalProperties": false
+    },
+    "payload": {}
+  }
+}
+

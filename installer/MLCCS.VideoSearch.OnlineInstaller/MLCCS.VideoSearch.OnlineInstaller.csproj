@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MLCCS-VideoSearch-Online-Setup</AssemblyName>
+    <RootNamespace>MLCCS.VideoSearch.OnlineInstaller</RootNamespace>
+    <Version>0.3.0</Version>
+    <Company>MLCCS</Company>
+    <Product>MLCCS VideoSearch 在线安装器</Product>
+    <ApplicationIcon>..\..\assets\MLCCS.VideoSearch.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MLCCS.VideoSearch.Installer.Acceptance" />
+  </ItemGroup>
+</Project>

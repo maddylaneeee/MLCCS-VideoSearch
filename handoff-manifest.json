@@ -1,0 +1,596 @@
+{
+  "schemaVersion": 1,
+  "handoffVersion": "0.1.0",
+  "createdUtc": "2026-07-29T00:40:09.847760+00:00",
+  "fileInventoryExcludes": [
+    "handoff-manifest.json (its hash is supplied in WINDOWS_HANDOFF.md)",
+    "WINDOWS_HANDOFF.md (supplied separately and included in the complete handoff archive)"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "size": 148,
+      "sha256": "a93a0d9327f889086dca131a3ad4bb933aabcc85c59240929723acdad0f931dd"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "size": 4526,
+      "sha256": "f4da9b268b7f8a61f193fe3af605c72375644ea39a5e753172d0569e87d7bca8"
+    },
+    {
+      "path": "BUILD_WINDOWS.md",
+      "size": 2793,
+      "sha256": "5d7119d8d00df8f24cca7829a6f8172bdb38adffdc6f00804513c2c2bde505ac"
+    },
+    {
+      "path": "DIAGNOSTICS_DEPLOY.md",
+      "size": 2524,
+      "sha256": "f04f6aec19fd678c698031128dab77d569daf0efdd926051ef8dfe503c3c6bcb"
+    },
+    {
+      "path": "Directory.Build.props",
+      "size": 531,
+      "sha256": "ca4ed3033428162fd78377b4992cdc33705b68dbfa640618a3f2b1de4f787289"
+    },
+    {
+      "path": "INDEXING.md",
+      "size": 3102,
+      "sha256": "6774c1a5e5e658adcec982f33bcb029ca78913651be41999b5d1f1a7b04ccbb6"
+    },
+    {
+      "path": "MLCCS.VideoSearch.sln",
+      "size": 2912,
+      "sha256": "8968a7e61eaa43f8fb64e9d0de710dc2ba7c387f04b4da62ed3f8acb08c27b58"
+    },
+    {
+      "path": "MODELS_AND_LICENSES.md",
+      "size": 2434,
+      "sha256": "e89ee199b0fed87ea83d00e0adee75f9e23f2730fb20ee16f2b54f7b99856035"
+    },
+    {
+      "path": "PORTABLE_RELEASE.md",
+      "size": 1178,
+      "sha256": "3e15362529c7751cd662c818ad4426e99afc02705ae0a63f1493b30704520199"
+    },
+    {
+      "path": "READMEFIRST.md",
+      "size": 1742,
+      "sha256": "22a73a8bd04c569ee938230b4c0c84827ff768bd18fff8935b784479babbae88"
+    },
+    {
+      "path": "SEARCH.md",
+      "size": 2075,
+      "sha256": "9c82abd37f01fcb128b855fe953fed7cf80ec8630bd2c90290d196d77e8e7a71"
+    },
+    {
+      "path": "STATIC_ACCEPTANCE.md",
+      "size": 4716,
+      "sha256": "a44c98d6f623910977fcf0a204cacc60cd1dbb29e5905e44d7e60b8b548d978c"
+    },
+    {
+      "path": "UI_SPEC.md",
+      "size": 3066,
+      "sha256": "52eb491c38ea553ee9c46d19626a72baa9e74a3e69e175a3ba46b40a462b80be"
+    },
+    {
+      "path": "UPDATE_PUBLISHING.md",
+      "size": 2086,
+      "sha256": "4cca0c227891e30a772e5233d414bfe7d00a35cd3ea41146532c112ff63e448a"
+    },
+    {
+      "path": "WINDOWS_ACCEPTANCE.md",
+      "size": 5359,
+      "sha256": "6a6f7540e7d900dcba0930d13cd464bee07635c41532288028a2e518f6a5d7e4"
+    },
+    {
+      "path": "global.json",
+      "size": 111,
+      "sha256": "20c93ca7812d0a9825eef71217156f95ab2f4fe5aadfeb22ebc1c24b630018d3"
+    },
+    {
+      "path": "release/update-sample/README.md",
+      "size": 426,
+      "sha256": "140950ef2dcca59468d0900e84076a1964b21a196fec6f85c292f056092448b1"
+    },
+    {
+      "path": "release/update-sample/manifest.json",
+      "size": 914,
+      "sha256": "3759d9a944cc5e3895855ea9e223f87b2f595b2d3186512da59e274a2afbc948"
+    },
+    {
+      "path": "release/update-sample/payload/version.json",
+      "size": 158,
+      "sha256": "a66e09d00220741d80ee1feaba9a2c4e3e3b6da8c3ccc7a820d45432afdaa51c"
+    },
+    {
+      "path": "release/update-sample/sample-update.zip",
+      "size": 242,
+      "sha256": "27daa157c5702c3d305484f595ef49277269dca926c200e6f56119567a624b12"
+    },
+    {
+      "path": "release-notes.md",
+      "size": 261,
+      "sha256": "e7ea2bc3bc33027fd449a541e3a428a10417ff46815079e2d41d6cb65cd41fff"
+    },
+    {
+      "path": "schemas/diagnostics-report.schema.json",
+      "size": 1240,
+      "sha256": "a66e8c580ac1b13bab47130f97745f04ec74fe8b8647050db0fdc203fd8338c7"
+    },
+    {
+      "path": "schemas/error-codes.json",
+      "size": 1072,
+      "sha256": "7e8f5033dbc36adb9b5c7fe982848f63bb91df4f22a3a8b7718baebe67ac957a"
+    },
+    {
+      "path": "schemas/ipc-envelope.schema.json",
+      "size": 1236,
+      "sha256": "e1e3fdd690bb02de8792d877115dd2c629d00fab24c019c65528a7ea0493b4b3"
+    },
+    {
+      "path": "schemas/model-manifest.schema.json",
+      "size": 2403,
+      "sha256": "ef662fcae80d16a8a5cc7a0e2b0aadca3cc07022cab8bd0c029ba4ccf8b1b7b4"
+    },
+    {
+      "path": "schemas/qdrant-collections.json",
+      "size": 676,
+      "sha256": "947c409e8a6c22def0edc190eb0cfd57235800b034fdc5c71cafb1a17d5fb553"
+    },
+    {
+      "path": "schemas/settings.schema.json",
+      "size": 2385,
+      "sha256": "4c9fbd037c6bd250fcc59aab798e449e5c8dd3068adb5dfa210fa6037343bfe5"
+    },
+    {
+      "path": "schemas/update-manifest.schema.json",
+      "size": 1130,
+      "sha256": "be47ead3a1601403448209df2147e65657b0d3e08f6550432af5967e6e78fd65"
+    },
+    {
+      "path": "scripts/Bootstrap-Windows.ps1",
+      "size": 989,
+      "sha256": "c8d402592f6421b6a02c561ac523e2af01242eb0a2243a60441f6d619d68885f"
+    },
+    {
+      "path": "scripts/Build-PrivateRuntime.ps1",
+      "size": 2209,
+      "sha256": "b2ac529a2f4e23f5c18f6931caa16d85c206d783a181f7ab96985f1017427d8b"
+    },
+    {
+      "path": "scripts/Build-Windows.ps1",
+      "size": 1580,
+      "sha256": "f06b290460be0fd5b3db1888797fd36ae653283ad07ff1b9867799f60497789f"
+    },
+    {
+      "path": "scripts/New-Handoff.ps1",
+      "size": 1691,
+      "sha256": "1346d386125a956854bc12b4a0af8bde086ddd443deede1bcbb751907617f21f"
+    },
+    {
+      "path": "scripts/New-PortableRelease.ps1",
+      "size": 1925,
+      "sha256": "b0f24760b5817584ddf30d80a1dedad8a93b527cea67e30cd8a368414da7cc65"
+    },
+    {
+      "path": "scripts/New-SignedUpdate.ps1",
+      "size": 1400,
+      "sha256": "1f816bbd592fde28cdafa991c1b92604c32cdc4a387a9a208e392152913c4635"
+    },
+    {
+      "path": "scripts/Static-Acceptance.sh",
+      "size": 1940,
+      "sha256": "cd82d1bf8338b53fa9a4ba880a9c013b1dc8e95e0eb2301b51d8ba64a3e115e5"
+    },
+    {
+      "path": "scripts/finalize_handoff.py",
+      "size": 2198,
+      "sha256": "9b95a6a2d7f3052eac5cf8ea5fe71deb3a26c091220d6b6c2cfdd46c31e83656"
+    },
+    {
+      "path": "scripts/lock_dependencies.py",
+      "size": 3581,
+      "sha256": "d9badd0c990e29fdf1b0633f87839082bcbc6d279da82a8112975ba69adf10e3"
+    },
+    {
+      "path": "scripts/lock_models.py",
+      "size": 3471,
+      "sha256": "ccf64bd44688725ee41b26cd8d744f4365ecdb8bd2b8c41d8fe92f68b40a3f6a"
+    },
+    {
+      "path": "scripts/validate_repository.py",
+      "size": 2969,
+      "sha256": "675bb28b58b6212370af45b69628df287da20fc07bf998d85afcee35abb1a4b2"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Agent/MLCCS.VideoSearch.Agent.csproj",
+      "size": 432,
+      "sha256": "5a2e5642c68a142547093eeab03c467361d31887715b12bacb626f7b3c5019c4"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Agent/Program.cs",
+      "size": 7144,
+      "sha256": "818614172ecc9c3a59032a56250986fd2a2bd24315212891d0ca53e3427fa782"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Contracts/AppSettings.cs",
+      "size": 1690,
+      "sha256": "22155e889b1da88ee22624935dca35767fb0499a462c76371fe7cc55d07ab16a"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Contracts/IpcEnvelope.cs",
+      "size": 1826,
+      "sha256": "a811b798c7b08364d7250668695a28d17e1ab7292b9ca014cc09d4ac3006c872"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Contracts/PipeFraming.cs",
+      "size": 2160,
+      "sha256": "865aca58ce97be35dda033e4078c19f3dacd1db7c86332cd3f6ea56d9aae45cd"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Contracts/SettingsMigrator.cs",
+      "size": 1360,
+      "sha256": "e3e062c5bc0c1dcee26d6432d282ca9a79006f5a03a5c8287c66d17dcbfd8471"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Indexing/DurableJobState.cs",
+      "size": 1253,
+      "sha256": "96253026352aa9abcb424da498f4add220e15484f91a86bc3a306adafefe6368"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Indexing/SceneSegmenter.cs",
+      "size": 2512,
+      "sha256": "8ae6b072bae2f27914f657b2783f19dd2f268b13fc6442652fa3a6298a92bf10"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Indexing/SpeechWindowMerger.cs",
+      "size": 2573,
+      "sha256": "486e20ab95d294dec0fe493545420e204407371146064261e6da0a5a13d8d396"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/MLCCS.VideoSearch.Core.csproj",
+      "size": 474,
+      "sha256": "ff3480716267013fc87b16c3063517d5bd83bf2bf6ff184688cd3e7239c52277"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Privacy/DiagnosticRedactor.cs",
+      "size": 1485,
+      "sha256": "e1e5ec8c57f5b965994f21aa1dbde1f0a3e73402c0d077907fbe5ae9d7812c0b"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Privacy/DiagnosticsClient.cs",
+      "size": 4185,
+      "sha256": "392b1ca59c00c3ae3810dec255d2562c769266f4cbc59afee51994a725da4d26"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Search/PhoneticCandidates.cs",
+      "size": 2312,
+      "sha256": "de5a87edb6bf7c1750fb892ede8e12a7dbaecb41d730b57c77d7c13612cf0b9b"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Search/RrfRanker.cs",
+      "size": 1785,
+      "sha256": "3d8a2023ee5d3b45604f1a63ef515aa7e3d67d1190215a8cbcbd2c292c8314a9"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Search/SearchCoordinator.cs",
+      "size": 3267,
+      "sha256": "8644668a4977cbfffb46afc04b0d8936577c4014e2083b4b74c421115f8aa5f0"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Storage/CatalogDatabase.cs",
+      "size": 2368,
+      "sha256": "e289031e9a71f3accf97e6d5d02afda2380e2c22189ac40922154ac6703ee1ea"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Storage/FileIdentity.cs",
+      "size": 4344,
+      "sha256": "54cec8eb074faac3d57ab97cb045bbb2d3509b596b4cadd8e31a7143940a5126"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Storage/JobRepository.cs",
+      "size": 3915,
+      "sha256": "e3eeaa7b955da99c46fd8e6557c101343dcbedc16f33ba9a1280d22a12f39a83"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Storage/Migrations/001_initial.sql",
+      "size": 4100,
+      "sha256": "87d126746f2a1f8aa000f4a75b39b4780cf4c1c2985f640fa7d2af9489e68fac"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Updates/EmbeddedUpdateKey.cs",
+      "size": 702,
+      "sha256": "7a096f3362041efbc49dc3f87579ea3ecfa49d15d4ec3f9b59bfb341301c5c43"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Updates/UpdateClient.cs",
+      "size": 2824,
+      "sha256": "ace96ac1e2e8b35c6491b0d2ad2a8be00fabe1f9ce6c2d1331aedd631974454b"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Core/Updates/UpdateVerifier.cs",
+      "size": 2018,
+      "sha256": "ba0781370f10a3a3365a55fdcf3da0a670dc781d4452898ae3979c5f84e8915f"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/App.xaml",
+      "size": 454,
+      "sha256": "dfaa1eb0ebaa830a03de76acbe97bd54d9ed495b98aaad3e9628db795144ffc5"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/App.xaml.cs",
+      "size": 668,
+      "sha256": "e5d700fca7293acf6dc4869a146e46f08e184f2360e3ccd09cd8fa70ab72d913"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/MLCCS.VideoSearch.UI.csproj",
+      "size": 837,
+      "sha256": "8cb1601962edc085cfaf666c67d1b927ea6f9583128087f47d04973012c0e514"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/MainWindow.xaml",
+      "size": 925,
+      "sha256": "ed392f8225c80527ba9c5383bff10cb35b42350738d5a0bb906c38161ad9f305"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/MainWindow.xaml.cs",
+      "size": 1189,
+      "sha256": "60ef3f75844d0f9c62e060162521aa0ec8e7f7cd50b34affe7ce64bae4d2ac1d"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/FirstRunPage.xaml",
+      "size": 721,
+      "sha256": "b6aaa76f2bbc26daddf43ff5ebf728171ad3c3e2d085bfad77082cb5e02b8718"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/FirstRunPage.xaml.cs",
+      "size": 172,
+      "sha256": "c3939f18f1d8ddd73672d023b28bfc5843cc2cf3a00c758cb6f5470ca66a2d4e"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/JobsPage.xaml",
+      "size": 849,
+      "sha256": "c9176f027e916f6d27a58daacc67fc04bc232464bc4649a1a30b656125a9c34c"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/JobsPage.xaml.cs",
+      "size": 165,
+      "sha256": "c77c4f466078eccc0ea2db57c5aed5a7cee1545042589425b972805e29844514"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/LibraryPage.xaml",
+      "size": 1788,
+      "sha256": "76cced2e207dd1b4ec5fd88013351b9a5907fb745d96af18746aa289119b5bfa"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/LibraryPage.xaml.cs",
+      "size": 171,
+      "sha256": "414cd47146fdcb6c3c93fa69ca74cea3598157625262baeed50ae5da687dbf57"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/SearchPage.xaml",
+      "size": 2305,
+      "sha256": "1feae58475fd78394e1c28ec2208bbef5db42b7957e5c777e0e3da4ce3772b75"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/SearchPage.xaml.cs",
+      "size": 169,
+      "sha256": "07b42676768e5b1b49c80f01578c67a21a2633e222c9ebf68db7c9212ae21d80"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/SettingsPage.xaml",
+      "size": 2920,
+      "sha256": "6ca757b782435ca398e724692b3447f1e1ae261379c1fd713fd31fd0870bd216"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/Pages/SettingsPage.xaml.cs",
+      "size": 173,
+      "sha256": "b09bea1e306a627e639d4f7c7bcac0fd7062502f335929ca69f4dc5e91faa2cd"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.UI/app.manifest",
+      "size": 587,
+      "sha256": "7090d0bb50807c942416f586e496e858b06b18165abe05d11dfd64632e18928c"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Updater/MLCCS.VideoSearch.Updater.csproj",
+      "size": 385,
+      "sha256": "6e3b2885e0285bf12d3ec2a391f2b29fffb7413c987c04c83b09343b1ec29d9a"
+    },
+    {
+      "path": "src/MLCCS.VideoSearch.Updater/Program.cs",
+      "size": 4080,
+      "sha256": "e47692d5caa4d070032ff79e9394f24a2f1bcbc89117627dbbf00090df38a7b8"
+    },
+    {
+      "path": "tests/MLCCS.VideoSearch.Core.Tests/CoreAlgorithmsTests.cs",
+      "size": 6722,
+      "sha256": "c664d28a55ed72ca88e49d8991ec041bb94258d76bb87fa8b1ea4014f035f5ee"
+    },
+    {
+      "path": "tests/MLCCS.VideoSearch.Core.Tests/MLCCS.VideoSearch.Core.Tests.csproj",
+      "size": 1125,
+      "sha256": "bb15ed082d4791983269326ffd620221d57027dcb2b8ef490b5a1effb3ad8f6d"
+    },
+    {
+      "path": "tests/contracts/diagnostics.valid.json",
+      "size": 359,
+      "sha256": "baf01c3881957dae6ef22fd7959b69312166b4c415aa87a3324cac6e220d3d10"
+    },
+    {
+      "path": "tests/contracts/settings.valid.json",
+      "size": 590,
+      "sha256": "e04b20228142a496b3d3e2cfeef4f1ad9296588d3b98268168be780c95fc0656"
+    },
+    {
+      "path": "tests/contracts/update.valid.json",
+      "size": 430,
+      "sha256": "b59813a5fcabf9aafbbc0e908a61425d783d327b5dbbb04b6bbc67a79bc503be"
+    },
+    {
+      "path": "tests/data/evaluate_search.py",
+      "size": 936,
+      "sha256": "eac361b934ba5a7edd19273085544e9bfa7c3d9730505c2cd2889489c95ea1af"
+    },
+    {
+      "path": "tests/data/generate_acceptance_dataset.py",
+      "size": 2055,
+      "sha256": "f4c837d2589d00040d8517843f81734c5abde22fd2df60727f1f5b707cb397cd"
+    },
+    {
+      "path": "tests/python/test_schemas.py",
+      "size": 1077,
+      "sha256": "c73b4103431e47850ab82c9148922cf925d228c992a644ab2ef1a6c434112068"
+    },
+    {
+      "path": "tests/python/test_worker.py",
+      "size": 1807,
+      "sha256": "7b4c927a0568b6162f0cc9107aebc3e88bbfd97cc0d415ecc596dfc948e8918f"
+    },
+    {
+      "path": "tools/MLCCS.VideoSearch.SigningTool/MLCCS.VideoSearch.SigningTool.csproj",
+      "size": 146,
+      "sha256": "df9f7b6009ea70309922e4ec7b9f937e697fa442ecc18131cb85325f48857bc6"
+    },
+    {
+      "path": "tools/MLCCS.VideoSearch.SigningTool/Program.cs",
+      "size": 1866,
+      "sha256": "617355d10d2a024080c3bc2fa72fc322b2d6e9d28b6e0098393851239de8384a"
+    },
+    {
+      "path": "website/README.md",
+      "size": 591,
+      "sha256": "e6c1271a0a34d9a3afd92f2e6f0c694e3a457270db75207fba6ff39bb8b08968"
+    },
+    {
+      "path": "website/rollback/README.md",
+      "size": 446,
+      "sha256": "547c5fe6b50f9f08b96201ff2014b6d6500c8f900942fad397307f8e1214bf11"
+    },
+    {
+      "path": "website/routes-fragment.json",
+      "size": 879,
+      "sha256": "f4cb8c187edca5ef04102868a599654c3c22bfd8bdfb7761960f620b4a62b8e9"
+    },
+    {
+      "path": "website/source/videosearch_diagnostics_plugin.py",
+      "size": 17077,
+      "sha256": "55bab8d817f98f6a11007c6c601727d4a1c13b5f3da2d60aefd70163bbfc4c32"
+    },
+    {
+      "path": "website/tests/test_videosearch_diagnostics_plugin.py",
+      "size": 7748,
+      "sha256": "c23d323166c6748b4cbcb3b78db5cd5dab436d217843e5426ad148c0003151cf"
+    },
+    {
+      "path": "website/videosearch-diagnostics-upgrade.zip",
+      "size": 6096,
+      "sha256": "44bd5ce06cbc403beea8f2140701eab666f27afa645dc7098af796994ff81bff"
+    },
+    {
+      "path": "worker/manifests/dependencies.lock.json",
+      "size": 166035,
+      "sha256": "cdc685379b4b8a8bd500cf120e0a2adc053c80edf645802560abfae7995a5e5e"
+    },
+    {
+      "path": "worker/manifests/model-sources.json",
+      "size": 2446,
+      "sha256": "46c7ca1524664b82b089a0b1c756d6f694eea52aabf6764e3e8bc827189ab028"
+    },
+    {
+      "path": "worker/manifests/models.lock.json",
+      "size": 57955,
+      "sha256": "900bc101377d2b4ed0e65b304958c42cbbdc7274993e93c7fdd756e1513a6a40"
+    },
+    {
+      "path": "worker/mlccs_worker/__init__.py",
+      "size": 90,
+      "sha256": "1c342d9af65e8d69e9107ddab889ebf76433b138481b4b916b45f10d9b0bc58a"
+    },
+    {
+      "path": "worker/mlccs_worker/__main__.py",
+      "size": 1445,
+      "sha256": "106ca1d91e771729fc94787147a92cdd2766166391fff6de16cbf2172de966f0"
+    },
+    {
+      "path": "worker/mlccs_worker/capabilities.py",
+      "size": 2037,
+      "sha256": "35473d37943b59e17df955113995e18290d100880402e1dbffa194887d0ed5f5"
+    },
+    {
+      "path": "worker/mlccs_worker/contracts.py",
+      "size": 1722,
+      "sha256": "b15242a830a0f9ea524e41901f987be3b704a3b728e3a67ac3c7bbfa5b9f940f"
+    },
+    {
+      "path": "worker/mlccs_worker/downloader.py",
+      "size": 3464,
+      "sha256": "8ae09398eb4eefef4dcbb9795604deb2759d2696fccddce3223667ea461fe240"
+    },
+    {
+      "path": "worker/mlccs_worker/media.py",
+      "size": 1486,
+      "sha256": "d57c4c34d8c71bbe3140fda8a316af549150384db874592132e216a6041f2ced"
+    },
+    {
+      "path": "worker/mlccs_worker/pipe.py",
+      "size": 1182,
+      "sha256": "579e6070550feb8bbb42499933b2d2452bdc224fdda8846078a183cc6f1508a9"
+    },
+    {
+      "path": "worker/mlccs_worker/pipeline.py",
+      "size": 4177,
+      "sha256": "5b647c3547dba9ad2f7a2d60e6f9507ea6bb48535b31e3efa3650a0c8c6482f3"
+    },
+    {
+      "path": "worker/mlccs_worker/vector_store.py",
+      "size": 1204,
+      "sha256": "191bc8ab03ee720b02155f564ef453eacdb9b1b4e0642548e5e3242bdeaab711"
+    },
+    {
+      "path": "worker/pyproject.toml",
+      "size": 609,
+      "sha256": "eec238f9a7de1d7172bf56ef45f1bd1e0e4b51fa57de3afee3e9569fc842344d"
+    },
+    {
+      "path": "worker/requirements.hashed.txt",
+      "size": 13108,
+      "sha256": "b5021582de59b2a0b4e7814a83856e4d95f589de8678741a2c085e1d83b12201"
+    },
+    {
+      "path": "worker/requirements.lock",
+      "size": 403,
+      "sha256": "46c32fb2473cdbc2bf49a428bbcb52d4b64a2f07d0e0001c7d721ef31ebc26af"
+    },
+    {
+      "path": "worker/vendor/gputil-1.4.0-py3-none-any.whl",
+      "size": 7435,
+      "sha256": "26753328efa3c8f24270cdf334d775a9fe37cf7757515844fcfad0ad4ea0ae60"
+    }
+  ],
+  "staticAcceptance": {
+    "report": "STATIC_ACCEPTANCE.md",
+    "status": "passed-with-windows-only-items"
+  },
+  "websiteUpgrade": "website/videosearch-diagnostics-upgrade.zip",
+  "updateSample": "release/update-sample/",
+  "windowsOnlyPending": [
+    "WinUI compile and runtime",
+    "named-pipe and tray lifecycle",
+    "private binary loading and CUDA",
+    "clean-machine first run",
+    "real-media index/search/player",
+    "30-minute load",
+    "72-hour endurance",
+    "UI/accessibility screenshots",
+    "Defender/production diagnostics",
+    "signed updater and stable hosting"
+  ],
+  "forbiddenContent": [
+    "models",
+    "cache",
+    "keys",
+    "credentials",
+    "user media"
+  ]
+}

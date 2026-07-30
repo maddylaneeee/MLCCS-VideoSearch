@@ -1,0 +1,40 @@
+{
+  "version": "0.3.0-feedback5",
+  "generatedUtc": "2026-07-29T17:14:44.4988096Z",
+  "setup": {
+    "file": "MLCCS-VideoSearch-Online-Setup.exe",
+    "size": 143943908,
+    "sha256": "8350e9e39062f88ffda1f46def307300575f84c76eea2284829f311ed5e89962"
+  },
+  "manifest": {
+    "file": "installer-manifest.json",
+    "size": 11478734,
+    "sha256": "0acecbaae15a38e8ea3a09fa7d6436755ac5543a741d0d6e056b921f305c2fcd"
+  },
+  "components": [
+    {
+      "id": "app-core",
+      "file": "app-core-0.3.0-feedback5.zip",
+      "size": 186752530,
+      "sha256": "963e1cfe6960e92f968b6b8e8bec031eaef2915f48457bfaf266a1c4959d0c4d"
+    },
+    {
+      "id": "private-runtime",
+      "file": "private-runtime-0.3.0-feedback5.zip",
+      "size": 3559201093,
+      "sha256": "8a4ba4c9012d24e1737eaac355822ce219d058e9ed8604861e26f38b70700c73"
+    },
+    {
+      "id": "visual-model",
+      "file": "visual-model-0.3.0-feedback5.zip",
+      "size": 1365789903,
+      "sha256": "0befd5b51635e3430e35c103afedc7c46f008bf10998accbc5bef04f25d84718"
+    },
+    {
+      "id": "ocr-models",
+      "file": "ocr-models-0.3.0-feedback5.zip",
+      "size": 18631826,
+      "sha256": "36a7d87c95c33fd26215b68d004bcb0cd46a16f85a1a0a92f6caf3e106ffbe8b"
+    }
+  ]
+}

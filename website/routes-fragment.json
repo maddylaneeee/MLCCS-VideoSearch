@@ -1,0 +1,33 @@
+{
+  "route": {
+    "method": "POST",
+    "path": "/api/mlccs-videosearch/diagnostics",
+    "path_match": "prefix",
+    "plugin": "videosearch-diagnostics:v1",
+    "enabled": true,
+    "permissions": {
+      "network": false,
+      "process_spawn": true,
+      "allow_paths": [
+        "D:/lixinchenca-videosearch",
+        "D:/lixinchenca-videosearch/diagnostics",
+        "C:/Program Files/Windows Defender",
+        "C:/ProgramData/Microsoft/Windows Defender/Platform"
+      ],
+      "filesystem": ["read", "write"]
+    },
+    "headers": {}
+  },
+  "plugin": {
+    "id": "videosearch-diagnostics:v1",
+    "timeout_ms": 330000,
+    "queue_wait_timeout_ms": 1000,
+    "max_retries": 1,
+    "worker_count": 2,
+    "max_pending_requests": 100,
+    "enabled": true,
+    "keep_alive": true,
+    "idle_timeout": 3600,
+    "script": "../plugins/videosearch_diagnostics_plugin.py"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "privacy": {"helpImprove": true, "fullLogUploadConsent": false},
+  "indexing": {"filename": true, "visual": true, "speech": false, "ocr": false, "background": true, "batteryPolicy": "reduced", "concurrency": "adaptive"},
+  "search": {"phoneticExpansion": "medium"},
+  "updates": {"automaticCheck": true, "channel": "stable", "skippedVersion": null},
+  "storage": {"dataRoot": "D:\\VideoSearchData", "modelRoot": "D:\\VideoSearchData\\models", "cacheRoot": "D:\\VideoSearchData\\cache", "indexRoot": "D:\\VideoSearchData\\index", "cacheLimitBytes": 21474836480}
+}
+

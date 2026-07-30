@@ -1,0 +1,52 @@
+Tue Jul 28 19:07:46 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 610.62                 KMD Version: 610.62        CUDA UMD Version: 13.3     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 2050      WDDM  |   00000000:01:00.0  On |                  N/A |
+| N/A   60C    P3              7W /   49W |     856MiB /   4096MiB |     31%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A             376    C+G   C:\Windows\explorer.exe               N/A      |
+|    0   N/A  N/A            7988    C+G   ...lus\logioptionsplus_agent.exe      N/A      |
+|    0   N/A  N/A           13260    C+G   ...indows\System32\ShellHost.exe      N/A      |
+|    0   N/A  N/A           15100    C+G   ...2txyewy\CrossDeviceResume.exe      N/A      |
+|    0   N/A  N/A           17744    C+G   ...AcrobatNotificationClient.exe      N/A      |
+|    0   N/A  N/A           17760    C+G   ...yet59cg\Package\QuickLook.exe      N/A      |
+|    0   N/A  N/A           18608    C+G   ...c76g0\app\ChatGPT Classic.exe      N/A      |
+|    0   N/A  N/A           19612    C+G   ..._cw5n1h2txyewy\SearchHost.exe      N/A      |
+|    0   N/A  N/A           19620    C+G   ...y\StartMenuExperienceHost.exe      N/A      |
+|    0   N/A  N/A           20696    C+G   ....0.4078.65\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A           20784    C+G   ...ntrolPanel\SystemSettings.exe      N/A      |
+|    0   N/A  N/A           23280    C+G   ...5n1h2txyewy\TextInputHost.exe      N/A      |
+|    0   N/A  N/A           24664    C+G   ...enCommandCenterBackground.exe      N/A      |
+|    0   N/A  N/A           26376    C+G   ...x40ttqa\iCloud\iCloudHome.exe      N/A      |
+|    0   N/A  N/A           27600    C+G   ...lare WARP\Cloudflare WARP.exe      N/A      |
+|    0   N/A  N/A           28028    C+G   ....0.4078.65\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A           29140    C+G   ...kyb3d8bbwe\EdgeGameAssist.exe      N/A      |
+|    0   N/A  N/A           32740    C+G   ...\Creative Cloud UI Helper.exe      N/A      |
+|    0   N/A  N/A           33772    C+G   ...c\AdobeNotificationClient.exe      N/A      |
+|    0   N/A  N/A           36452    C+G   ...em32\ApplicationFrameHost.exe      N/A      |
+|    0   N/A  N/A           37088    C+G   ...xyewy\ShellExperienceHost.exe      N/A      |
+|    0   N/A  N/A           38352    C+G   ...4__8wekyb3d8bbwe\Video.UI.exe      N/A      |
+|    0   N/A  N/A           56176    C+G   ...\cef.win64\steamwebhelper.exe      N/A      |
+|    0   N/A  N/A           60168    C+G   ...8bbwe\PhoneExperienceHost.exe      N/A      |
+|    0   N/A  N/A           80128    C+G   ...Chrome\Application\chrome.exe      N/A      |
+|    0   N/A  N/A           88892    C+G   ...Chrome\Application\chrome.exe      N/A      |
+|    0   N/A  N/A          109216    C+G   ...n1h2txyewy\CHXSmartScreen.exe      N/A      |
+|    0   N/A  N/A          124768    C+G   ...t\Edge\Application\msedge.exe      N/A      |
+|    0   N/A  N/A          125900    C+G   ...2p2nqsd0c76g0\app\ChatGPT.exe      N/A      |
+|    0   N/A  N/A          130140    C+G   ....0.4078.99\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A          133396    C+G   ...2p2nqsd0c76g0\app\ChatGPT.exe      N/A      |
+|    0   N/A  N/A          137032    C+G   ...-x64\MLCCS.VideoSearch.UI.exe      N/A      |
+|    0   N/A  N/A          138532    C+G   ...indows\codex-computer-use.exe      N/A      |
++-----------------------------------------------------------------------------------------+

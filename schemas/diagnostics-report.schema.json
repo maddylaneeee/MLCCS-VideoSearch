@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lixinchen.ca/schemas/mlccs-videosearch/diagnostics-report-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "reportId", "createdUtc", "component", "appVersion", "description", "consent", "files"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "reportId": { "type": "string", "format": "uuid" },
+    "createdUtc": { "type": "string", "format": "date-time" },
+    "component": { "enum": ["ui", "agent", "worker", "updater"] },
+    "appVersion": { "type": "string" },
+    "description": { "type": "string", "maxLength": 4000 },
+    "consent": { "const": true },
+    "files": {
+      "type": "array", "maxItems": 64,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "size", "sha256", "mime"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[^/\\\\]{1,120}$" },
+          "size": { "type": "integer", "minimum": 0, "maximum": 26214400 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "mime": { "enum": ["application/json", "text/plain", "application/zip"] }
+        }
+      }
+    }
+  }
+}
+

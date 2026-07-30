@@ -1,0 +1,13 @@
+{
+  "protocolVersion": 1,
+  "appVersion": "0.1.0-acceptance",
+  "minimumCompatibleVersion": "0.1.0",
+  "downloadUrl": "https://lixinchen.ca/downloads/mlccs-videosearch/test/0.1.0-acceptance/sample-update.zip",
+  "size": 242,
+  "sha256": "27daa157c5702c3d305484f595ef49277269dca926c200e6f56119567a624b12",
+  "archiveSignature": "nVRGCZZYcdcuMKPdpHTxG8sz0YiT550kNfL9ArTLN5Fu6KhN\u002BI95tw5tRmofue1o\u002BACnT5sm/KjUM34B5Ny91Q==",
+  "publishedUtc": "2026-07-28T00:00:00+00:00",
+  "releaseNotes": "# MLCCS Video Search 0.1.0\n\nInitial clean-room Windows acceptance build: local filename, visual, speech and OCR indexing/search architecture; durable background Agent; private ML runtime; explicit diagnostics consent; and signed portable updates with rollback.\n",
+  "mandatory": false,
+  "manifestSignature": "A3iBMB\u002B47Rb3Gb\u002BhwD5p8A6SWLxNhhzIvU2SKaC4FOnf1TmuiwRoWZRwkBMYzellME6rumjYwmeNKuKnLiT\u002BeA=="
+}

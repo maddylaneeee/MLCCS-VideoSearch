@@ -1,0 +1,95 @@
+<Page x:Class="MLCCS.VideoSearch.UI.Pages.SearchPage"
+      x:Name="RootPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid Padding="28,20,28,28" RowSpacing="14">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+    <TextBlock Text="搜索" Style="{StaticResource TitleTextBlockStyle}"/>
+    <AutoSuggestBox x:Name="QueryBox" Grid.Row="1" QueryIcon="Find"
+                    PlaceholderText="搜索文件名、视频画面、语音或画面文字"
+                    QuerySubmitted="QueryBox_QuerySubmitted"
+                    AutomationProperties.Name="搜索本地媒体"/>
+    <Grid Grid.Row="2" ColumnSpacing="12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <ComboBox x:Name="SourceSelector" Header="搜索来源" SelectedIndex="0" MinWidth="180">
+        <ComboBoxItem Content="全部来源" Tag="all"/>
+        <ComboBoxItem Content="仅文件名" Tag="filename"/>
+        <ComboBoxItem Content="仅视频画面" Tag="visual"/>
+        <ComboBoxItem Content="仅语音" Tag="speech"/>
+        <ComboBoxItem Content="仅画面文字" Tag="ocr"/>
+      </ComboBox>
+      <ComboBox x:Name="LibrarySelector" Grid.Column="1" Header="资源文件夹"
+                SelectedIndex="0" MinWidth="260" MaxWidth="420"
+                AutomationProperties.Name="按资源文件夹过滤搜索"/>
+      <Grid Grid.Column="2" VerticalAlignment="Bottom">
+        <TextBlock x:Name="SearchStateText" Text="正在检查索引状态"
+                   TextWrapping="Wrap" Opacity="0.72" VerticalAlignment="Center"/>
+        <InfoBar x:Name="SearchStatus" IsOpen="False"/>
+      </Grid>
+      <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+        <ToggleButton x:Name="ResultListButton" Content="列表" IsChecked="True" Click="ResultList_Click"/>
+        <ToggleButton x:Name="ResultGridButton" Content="网格" Click="ResultGrid_Click"/>
+      </StackPanel>
+    </Grid>
+    <Grid Grid.Row="3">
+      <ListView x:Name="ResultList" ItemsSource="{x:Bind Results, Mode=OneWay}" SelectionMode="Single"
+                IsItemClickEnabled="True" ItemClick="Result_ItemClick" AutomationProperties.Name="搜索结果列表">
+        <ListView.ItemTemplate>
+          <DataTemplate>
+            <Grid MinHeight="132" Padding="4" ColumnSpacing="14">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="208"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <Border Width="208" Height="117" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid>
+                  <FontIcon Glyph="&#xE8B2;" FontSize="28" Opacity="0.35" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                  <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="#CC000000" CornerRadius="4" Margin="6" Padding="6,2">
+                    <TextBlock Text="{Binding TimestampText}" Foreground="White"/>
+                  </Border>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="16" MaxLines="2" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding MetadataText}" Opacity="0.75"/>
+                <TextBlock Text="{Binding Explanation}" Opacity="0.75" MaxLines="2" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Library}" Opacity="0.55" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="6">
+                <Button Content="从命中时间播放" Tag="{Binding}" Click="PlayResult_Click"/>
+                <Button Content="所在文件夹" Tag="{Binding}" Click="FolderResult_Click"/>
+                <Button Content="复制路径" Tag="{Binding}" Click="CopyResult_Click"/>
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListView.ItemTemplate>
+      </ListView>
+      <GridView x:Name="ResultGrid" ItemsSource="{x:Bind Results, Mode=OneWay}" Visibility="Collapsed"
+                IsItemClickEnabled="True" ItemClick="Result_ItemClick" SelectionMode="Single"
+                AutomationProperties.Name="搜索结果网格">
+        <GridView.ItemTemplate>
+          <DataTemplate>
+            <Grid Width="260" Padding="6" RowSpacing="6">
+              <Grid.RowDefinitions><RowDefinition Height="140"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid>
+                  <FontIcon Glyph="&#xE8B2;" FontSize="28" Opacity="0.35" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                  <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Background="#CC000000" CornerRadius="4" Margin="6" Padding="6,2">
+                    <TextBlock Text="{Binding TimestampText}" Foreground="White"/>
+                  </Border>
+                </Grid>
+              </Border>
+              <TextBlock Grid.Row="1" Text="{Binding Name}" FontWeight="SemiBold" MaxLines="2" TextWrapping="Wrap"/>
+              <TextBlock Grid.Row="2" Text="{Binding MetadataText}" Opacity="0.72"/>
+              <TextBlock Grid.Row="3" Text="{Binding Explanation}" Opacity="0.68" MaxLines="2" TextWrapping="Wrap"/>
+            </Grid>
+          </DataTemplate>
+        </GridView.ItemTemplate>
+      </GridView>
+    </Grid>
+  </Grid>
+</Page>

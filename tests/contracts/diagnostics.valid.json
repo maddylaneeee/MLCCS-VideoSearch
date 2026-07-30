@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1, "reportId": "11111111-1111-4111-8111-111111111111", "createdUtc": "2026-07-28T00:00:00Z",
+  "component": "worker", "appVersion": "0.1.0", "description": "controlled failure", "consent": true,
+  "files": [{"name":"worker.log","size":4,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mime":"text/plain"}]
+}
+

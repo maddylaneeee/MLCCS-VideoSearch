@@ -1,0 +1,6 @@
+{
+  "version": "0.1.0-acceptance",
+  "protocol": 1,
+  "purpose": "Signature and tamper-rejection acceptance only; not an installable application release."
+}
+

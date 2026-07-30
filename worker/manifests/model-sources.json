@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {"id":"openclip-standard","kind":"visual","repo":"laion/CLIP-ViT-B-32-xlm-roberta-base-laion5B-s13B-b90k","license":"MIT","vectorDimension":512,"recommendedVramBytes":4294967296},
+    {"id":"openclip-high","kind":"visual","repo":"laion/CLIP-ViT-H-14-frozen-xlm-roberta-large-laion5B-s13B-b90k","license":"MIT","vectorDimension":1024,"recommendedVramBytes":10737418240},
+    {"id":"bge-small","kind":"text","repo":"BAAI/bge-small-zh-v1.5","license":"MIT","vectorDimension":512,"recommendedVramBytes":0},
+    {"id":"bge-base","kind":"text","repo":"BAAI/bge-base-zh-v1.5","license":"MIT","vectorDimension":768,"recommendedVramBytes":2147483648},
+    {"id":"bge-large","kind":"text","repo":"BAAI/bge-large-zh-v1.5","license":"MIT","vectorDimension":1024,"recommendedVramBytes":4294967296},
+    {"id":"whisper-tiny","kind":"speech","repo":"Systran/faster-whisper-tiny","license":"MIT","vectorDimension":null,"recommendedVramBytes":2147483648},
+    {"id":"whisper-base","kind":"speech","repo":"Systran/faster-whisper-base","license":"MIT","vectorDimension":null,"recommendedVramBytes":2147483648},
+    {"id":"whisper-small","kind":"speech","repo":"Systran/faster-whisper-small","license":"MIT","vectorDimension":null,"recommendedVramBytes":3221225472},
+    {"id":"whisper-medium","kind":"speech","repo":"Systran/faster-whisper-medium","license":"MIT","vectorDimension":null,"recommendedVramBytes":4294967296},
+    {"id":"whisper-large-v3-turbo","kind":"speech","repo":"deepdml/faster-whisper-large-v3-turbo-ct2","license":"MIT","vectorDimension":null,"recommendedVramBytes":6442450944},
+    {"id":"whisper-large-v3","kind":"speech","repo":"Systran/faster-whisper-large-v3","license":"MIT","vectorDimension":null,"recommendedVramBytes":12884901888},
+    {"id":"ppocrv5-mobile-det","kind":"ocr","repo":"PaddlePaddle/PP-OCRv5_mobile_det","license":"Apache-2.0","vectorDimension":null,"recommendedVramBytes":0},
+    {"id":"ppocrv5-mobile-rec","kind":"ocr","repo":"PaddlePaddle/PP-OCRv5_mobile_rec","license":"Apache-2.0","vectorDimension":null,"recommendedVramBytes":0},
+    {"id":"ppocrv5-server-det","kind":"ocr","repo":"PaddlePaddle/PP-OCRv5_server_det","license":"Apache-2.0","vectorDimension":null,"recommendedVramBytes":4294967296},
+    {"id":"ppocrv5-server-rec","kind":"ocr","repo":"PaddlePaddle/PP-OCRv5_server_rec","license":"Apache-2.0","vectorDimension":null,"recommendedVramBytes":4294967296}
+  ]
+}
+

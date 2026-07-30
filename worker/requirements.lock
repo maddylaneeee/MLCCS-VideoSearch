@@ -1,0 +1,17 @@
+# Runtime is assembled offline for CPython 3.12 x64 Windows. Every downloaded wheel is hashed into dependencies.lock.json.
+torch==2.7.1
+torchvision==0.22.1
+open-clip-torch==3.1.0
+faster-whisper==1.1.1
+sentence-transformers==5.0.0
+paddleocr==3.1.0
+paddlepaddle==3.1.0
+GPUtil==1.4.0
+qdrant-edge-py==0.6.0
+av==15.0.0
+numpy==2.2.6
+Pillow==11.3.0
+pypinyin==0.54.0
+pywin32==310
+psutil==7.0.0
+requests==2.32.4
