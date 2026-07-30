@@ -3,10 +3,6 @@
 # MLCCS Video Search
 
 <p align="center">
-  <img src="assets/MLCCS.VideoSearch.png" alt="MLCCS Video Search 图标" width="160">
-</p>
-
-<p align="center">
   面向 Windows 10/11 的本地视频语义检索工具。<br>
   使用文件名、画面、语音与 OCR 字幕查找视频片段，索引和检索数据默认保留在本机。
 </p>

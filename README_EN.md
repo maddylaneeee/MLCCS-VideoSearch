@@ -3,10 +3,6 @@
 # MLCCS Video Search
 
 <p align="center">
-  <img src="assets/MLCCS.VideoSearch.png" alt="MLCCS Video Search icon" width="160">
-</p>
-
-<p align="center">
   Local video semantic search for Windows 10 and 11.<br>
   Find video moments by filename, visual content, speech, and on-screen text while keeping indexing and search data on your machine by default.
 </p>
