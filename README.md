@@ -3,6 +3,10 @@
 # MLCCS Video Search
 
 <p align="center">
+  <img src="assets/MLCCS.VideoSearch.png" alt="MLCCS Video Search 图标" width="160">
+</p>
+
+<p align="center">
   面向 Windows 10/11 的本地视频语义检索工具。<br>
   使用文件名、画面、语音与 OCR 字幕查找视频片段，索引和检索数据默认保留在本机。
 </p>
@@ -13,8 +17,6 @@
   <img alt="UI" src="https://img.shields.io/badge/UI-WinUI%203-0ea5e9">
   <img alt="Runtime" src="https://img.shields.io/badge/runtime-private%20%26%20local-16a34a">
 </p>
-
-![MLCCS Video Search 搜索界面](evidence/windows-acceptance/screenshots/search-release-window.jpg)
 
 > [!WARNING]
 > 本项目仍在持续开发和优化阶段。当前版本可能仍然存在稳定性、兼容性和功能性问题，不建议将其视为关键数据工作流中的成熟产品。欢迎通过 GitHub Issues 指出问题、提出修改意见或分享改进建议。
@@ -122,4 +124,8 @@ Set-ExecutionPolicy -Scope Process Bypass -Force
 - 仓库不包含生产签名私钥、用户索引数据库、模型缓存或用户媒体库。
 - 样本录屏是为本项目公开发布而明确加入的演示资源。
 
-第三方依赖和模型分别遵循各自许可证；请在再分发前查阅 `worker/licenses`、锁定清单及 [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md)。仓库当前未额外声明覆盖全部原创源码的开源许可证。
+## 许可证
+
+本项目原创源码和项目文档采用 [MIT License](LICENSE)，Copyright © 2026 Matt。
+
+第三方依赖、模型、工具和二进制继续遵循各自许可证，样本视频及验收截图不包含在 MIT 媒体再利用授权中。再分发前请查阅 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、锁定清单及 [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md)。

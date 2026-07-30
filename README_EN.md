@@ -3,6 +3,10 @@
 # MLCCS Video Search
 
 <p align="center">
+  <img src="assets/MLCCS.VideoSearch.png" alt="MLCCS Video Search icon" width="160">
+</p>
+
+<p align="center">
   Local video semantic search for Windows 10 and 11.<br>
   Find video moments by filename, visual content, speech, and on-screen text while keeping indexing and search data on your machine by default.
 </p>
@@ -13,8 +17,6 @@
   <img alt="UI" src="https://img.shields.io/badge/UI-WinUI%203-0ea5e9">
   <img alt="Runtime" src="https://img.shields.io/badge/runtime-private%20%26%20local-16a34a">
 </p>
-
-![MLCCS Video Search search screen](evidence/windows-acceptance/screenshots/search-release-window.jpg)
 
 > [!WARNING]
 > This project is still under active development and optimization. The current version may contain stability, compatibility, and functional issues and should not be treated as a mature product for critical data workflows. Bug reports, change requests, and improvement suggestions are welcome through GitHub Issues.
@@ -122,4 +124,8 @@ Related documentation:
 - The repository contains no production signing private keys, user index databases, model caches, or user media libraries.
 - The sample screen recording is an explicitly approved public project demo asset.
 
-Third-party dependencies and models remain under their respective licenses. Review `worker/licenses`, the lock manifests, and [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md) before redistribution. The repository does not currently declare an additional open-source license covering all original source code.
+## License
+
+The original project source code and project documentation are available under the [MIT License](LICENSE), Copyright © 2026 Matt.
+
+Third-party dependencies, models, tools, and binaries remain under their respective licenses. The sample video and acceptance screenshots are not included in the MIT media-reuse grant. Review [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), the lock manifests, and [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md) before redistribution.
