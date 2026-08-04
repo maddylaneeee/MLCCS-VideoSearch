@@ -48,13 +48,16 @@ class WorkerTests(unittest.TestCase):
     def test_production_catalog_schema_uses_sqlite_outbox_without_live_tables(self):
         with tempfile.TemporaryDirectory() as directory:
             connection = _database(Path(directory) / "catalog.db")
-            tables = {row[0] for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )}
-            self.assertTrue({"media_assets", "visual_segments", "transcript_segments",
-                             "speech_windows", "ocr_observations", "vector_outbox", "search_fts"} <= tables)
-            self.assertFalse({"real_visual_frames", "transcript_segments_live",
-                              "ocr_observations_live"} & tables)
+            try:
+                tables = {row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )}
+                self.assertTrue({"media_assets", "visual_segments", "transcript_segments",
+                                 "speech_windows", "ocr_observations", "vector_outbox", "search_fts"} <= tables)
+                self.assertFalse({"real_visual_frames", "transcript_segments_live",
+                                  "ocr_observations_live"} & tables)
+            finally:
+                connection.close()
 
     def test_missing_video_removal_queues_vector_deletes(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -111,11 +114,14 @@ class WorkerTests(unittest.TestCase):
                 def collection_exists(self, _name): return False
                 def close(self): pass
             engine = SearchEngine(database, Path(directory) / "models-not-installed", qdrant=EmptyQdrant())
-            for query, source in (("相同", "filename"), ("目标台词", "speech"), ("目标字幕", "ocr")):
-                results = engine.search(query, source, 60, "off", {"libraries": ["D:\\B"]})
-                self.assertEqual(["D:\\B\\相同名称.mp4"],
-                                 list(dict.fromkeys(item["path"] for item in results)),
-                                 source)
+            try:
+                for query, source in (("相同", "filename"), ("目标台词", "speech"), ("目标字幕", "ocr")):
+                    results = engine.search(query, source, 60, "off", {"libraries": ["D:\\B"]})
+                    self.assertEqual(["D:\\B\\相同名称.mp4"],
+                                     list(dict.fromkeys(item["path"] for item in results)),
+                                     source)
+            finally:
+                engine.close()
 
 
 if __name__ == "__main__":
