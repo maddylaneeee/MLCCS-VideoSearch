@@ -36,7 +36,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-public sealed class ReleaseHash { public string Path { get; set; } = ""; public long Size { get; set; } public string Sha256 { get; set; } = ""; }
+public sealed class ReleaseHash { public string Path { get; set; } public long Size { get; set; } public string Sha256 { get; set; } }
 public static class ReleaseHasher {
   public static ReleaseHash[] Tree(string root) {
     var prefix = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
