@@ -31,8 +31,16 @@ try {
     dotnet test tests/MLCCS.VideoSearch.Core.Tests/MLCCS.VideoSearch.Core.Tests.csproj -c $Configuration --no-build --logger "trx;LogFileName=core.trx" 2>&1 | Tee-Object -FilePath $log -Append
     if ($LASTEXITCODE) { throw "Core tests failed; see $log" }
     $privatePython = Join-Path $projectRoot 'worker/python/python.exe'
-    if (Test-Path -LiteralPath $privatePython) { & $privatePython -m unittest discover -s tests/python -v 2>&1 | Tee-Object -FilePath $log -Append }
-    else { python -m unittest discover -s tests/python -v 2>&1 | Tee-Object -FilePath $log -Append }
-    if ($LASTEXITCODE) { throw "Worker tests failed; see $log" }
+    $pythonExe = if (Test-Path -LiteralPath $privatePython) { $privatePython } else { (Get-Command python -ErrorAction Stop).Source }
+    $pythonStdout = Join-Path $logRoot 'python-tests.stdout.log'
+    $pythonStderr = Join-Path $logRoot 'python-tests.stderr.log'
+    Remove-Item -LiteralPath $pythonStdout, $pythonStderr -Force -ErrorAction SilentlyContinue
+    # unittest intentionally writes its progress to stderr. Redirect both streams at
+    # process level so Windows PowerShell 5.1/WinRM cannot turn success output into a
+    # terminating NativeCommandError.
+    $pythonProcess = Start-Process -FilePath $pythonExe -ArgumentList @('-m','unittest','discover','-s','tests/python','-v') -NoNewWindow -Wait -PassThru -RedirectStandardOutput $pythonStdout -RedirectStandardError $pythonStderr
+    if (Test-Path -LiteralPath $pythonStdout) { Get-Content -LiteralPath $pythonStdout | Tee-Object -FilePath $log -Append }
+    if (Test-Path -LiteralPath $pythonStderr) { Get-Content -LiteralPath $pythonStderr | Tee-Object -FilePath $log -Append }
+    if ($pythonProcess.ExitCode) { throw "Worker tests failed; see $log" }
   }
 } finally { Pop-Location }
