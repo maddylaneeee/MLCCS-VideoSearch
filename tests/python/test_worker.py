@@ -18,6 +18,7 @@ from mlccs_worker.capabilities import (Capabilities, has_v1_vram, recommend_whis
                                        require_speech, require_v1_hardware)
 from mlccs_worker.contracts import WorkerError
 from mlccs_worker.batch_index import (_database, _record_file_failure, _remove_missing_assets,
+                                      _effective_batch_size, _is_visual_current, _iter_scene_windows,
                                       _segment_sample_ranges, _speech_window_groups)
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
 from mlccs_worker.model_download import _atomic as atomic_model_status
@@ -73,6 +74,29 @@ class WorkerTests(unittest.TestCase):
                      for left, right in ranges]
         self.assertTrue(all(2_000 <= value <= 8_000 for value in durations))
         self.assertIn((0, 12), ranges)
+
+    def test_scene_window_streaming_keeps_only_one_bounded_window(self):
+        produced = 0
+        consumed_before_first_yield = None
+
+        def samples():
+            nonlocal produced
+            for index in range(7_201):
+                produced += 1
+                yield index * 500, np.zeros((8, 8, 3), dtype=np.uint8), 0.0
+
+        windows = _iter_scene_windows(samples(), 3_600_000)
+        first = next(windows)
+        consumed_before_first_yield = produced
+        self.assertEqual((0, 8_000), first[:2])
+        self.assertLessEqual(consumed_before_first_yield, 18)
+        self.assertLessEqual(len(first[2]), 4)
+
+    def test_auto_batch_is_capped_for_four_gb_class_gpu(self):
+        four_gb = 4 * 1024**3
+        self.assertEqual(8, _effective_batch_size(0, "adaptive-full", four_gb))
+        self.assertEqual(8, _effective_batch_size(32, "adaptive-full", four_gb))
+        self.assertEqual(4, _effective_batch_size(0, "efficiency", four_gb))
 
     def test_speech_semantic_windows_are_eight_to_thirty_seconds(self):
         rows = [(f"s{index}", index * 2_000, (index + 1) * 2_000, f"text {index}")
@@ -135,6 +159,24 @@ class WorkerTests(unittest.TestCase):
                     "SELECT error_code FROM assets WHERE id='asset'").fetchone()[0])
                 self.assertEqual(0, connection.execute(
                     "SELECT count(*) FROM visual_segments WHERE asset_id='asset'").fetchone()[0])
+            finally:
+                connection.close()
+
+    def test_unchanged_indexed_asset_is_skipped_only_for_current_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            try:
+                connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\L',1,'now')")
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,status) VALUES('asset','lib','D:\\L\\a.mp4',1,'now','same','video','Indexed')""")
+                connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                    size_bytes,modified_utc,duration_ms,status,visual_version)
+                    VALUES('D:\\L\\a.mp4','asset','D:\\L','a.mp4','.mp4',1,'now',1000,'Indexed','openclip-standard-506d40eb')""")
+                connection.commit()
+                self.assertTrue(_is_visual_current(connection, "asset", "same"))
+                self.assertFalse(_is_visual_current(connection, "asset", "changed"))
+                connection.execute("UPDATE media_assets SET visual_version='old' WHERE asset_id='asset'")
+                self.assertFalse(_is_visual_current(connection, "asset", "same"))
             finally:
                 connection.close()
 

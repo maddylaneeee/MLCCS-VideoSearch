@@ -1083,8 +1083,12 @@ internal sealed class AgentHost : ApplicationContext
         };
         try
         {
-            _indexer.PriorityClass = _configuration.ResourcePolicy.StartsWith("adaptive-full", StringComparison.Ordinal)
-                ? ProcessPriorityClass.High : ProcessPriorityClass.AboveNormal;
+            _indexer.PriorityClass = _configuration.ResourcePolicy switch
+            {
+                "efficiency" => ProcessPriorityClass.Idle,
+                "balanced" => ProcessPriorityClass.BelowNormal,
+                _ => ProcessPriorityClass.Normal
+            };
         }
         catch { }
         var logPath = Path.Combine(_root, "real-index.log");

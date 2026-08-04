@@ -136,7 +136,13 @@ public sealed partial class JobsPage : Page
             var decoders = root.TryGetProperty("decoderWorkers", out var decoderValue) ? decoderValue.GetInt32() : 1;
             var cuda = root.TryGetProperty("cuda", out var cudaValue) && cudaValue.ValueKind == JsonValueKind.String
                 ? $"CUDA {cudaValue.GetString()}" : "CPU";
-            HardwareStatus.Text = $"硬件：{root.GetProperty("gpu").GetString()} · {cuda} · CPU 线程 {root.GetProperty("cpuThreads").GetInt32()} · 解码器 {decoders} · 批大小 {root.GetProperty("batchSize").GetInt32()}";
+            var gpu = root.TryGetProperty("gpu", out var gpuValue) && gpuValue.ValueKind == JsonValueKind.String
+                ? gpuValue.GetString() : "GPU 信息暂不可用";
+            var cpuThreads = root.TryGetProperty("cpuThreads", out var cpuValue) &&
+                             cpuValue.ValueKind == JsonValueKind.Number ? cpuValue.GetInt32() : 0;
+            var batch = root.TryGetProperty("batchSize", out var batchValue) &&
+                        batchValue.ValueKind == JsonValueKind.Number ? batchValue.GetInt32() : 0;
+            HardwareStatus.Text = $"硬件：{gpu} · {cuda} · CPU 线程 {(cpuThreads > 0 ? cpuThreads.ToString() : "—")} · 解码器 {decoders} · 批大小 {(batch > 0 ? batch.ToString() : "—")}";
             ThroughputStatus.Text = $"真实吞吐：{rate:N2} 帧/秒（按数据库已提交向量与墙钟时间计算）";
         }
         catch (Exception error)

@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import sqlite3
 import time
+from collections.abc import Iterable, Iterator
 from typing import Any
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
@@ -127,48 +128,83 @@ def _media_info(path: Path) -> tuple[float, int | None, int | None, float | None
         return duration, int(stream.width or 0) or None, int(stream.height or 0) or None, fps, codec
 
 
-def _scene_windows(path: Path, duration: float) -> list[tuple[int, int, list[tuple[int, Any, float]]]]:
-    """Analyze at 2 FPS and return 2-8 second windows with representative RGB frames."""
+def _compact_rgb(rgb: Any) -> Any:
+    """Bound retained frame memory while preserving aspect ratio for CLIP crops."""
+    import cv2
+
+    height, width = rgb.shape[:2]
+    scale = min(1.0, 320.0 / max(1, min(height, width)))
+    if scale == 1.0:
+        return rgb
+    return cv2.resize(rgb, (max(1, round(width * scale)), max(1, round(height * scale))),
+                      interpolation=cv2.INTER_AREA)
+
+
+def _window_from_samples(samples: list[tuple[int, Any, float]], end_ms: int
+                         ) -> tuple[int, int, list[tuple[int, Any, float]]]:
+    strongest = max(range(len(samples)), key=lambda item: samples[item][2])
+    chosen = {len(samples) // 2, strongest}
+    if max(item[2] for item in samples) >= SCENE_THRESHOLD * 1.5:
+        chosen.add(max(0, strongest - 1))
+        chosen.add(min(len(samples) - 1, strongest + 1))
+    return samples[0][0], end_ms, [samples[item] for item in sorted(chosen)]
+
+
+def _iter_scene_windows(samples: Iterable[tuple[int, Any, float]], duration_ms: int
+                        ) -> Iterator[tuple[int, int, list[tuple[int, Any, float]]]]:
+    """Split a sample stream without retaining frames from the whole video."""
+    current: list[tuple[int, Any, float]] = []
+    for sample in samples:
+        timestamp_ms, _, motion = sample
+        if current:
+            elapsed = (timestamp_ms - current[0][0]) / 1000
+            remaining = (duration_ms - timestamp_ms) / 1000
+            if remaining >= MIN_SCENE_SECONDS and (elapsed >= MAX_SCENE_SECONDS or
+                                                    (elapsed >= MIN_SCENE_SECONDS and
+                                                     motion >= SCENE_THRESHOLD)):
+                yield _window_from_samples(current, timestamp_ms)
+                current = []
+        current.append(sample)
+    if current:
+        end_ms = max(current[-1][0], duration_ms)
+        yield _window_from_samples(current, end_ms)
+
+
+def _scene_windows(path: Path, duration: float) -> Iterator[tuple[int, int, list[tuple[int, Any, float]]]]:
+    """Analyze at 2 FPS and stream bounded 2-8 second representative windows."""
     import av
     import cv2
     import numpy as np
 
-    samples: list[tuple[int, Any, float]] = []
-    previous = None
-    target = 0.0
-    with av.open(str(path), metadata_errors="ignore") as container:
-        stream = next((item for item in container.streams if item.type == "video"), None)
-        if stream is None:
-            raise RuntimeError("不包含视频流")
-        stream.thread_type = "AUTO"
-        for frame in container.decode(stream):
-            timestamp = float((frame.pts or 0) * frame.time_base)
-            if timestamp + 0.001 < target:
-                continue
-            rgb = frame.to_ndarray(format="rgb24")
-            analysis = cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)
-            gray = cv2.cvtColor(analysis, cv2.COLOR_RGB2GRAY)
-            motion = 0.0 if previous is None else float(np.mean(cv2.absdiff(gray, previous)))
-            samples.append((round(timestamp * 1000), rgb, motion))
-            previous = gray
-            while target <= timestamp:
-                target += 1.0 / SCENE_FPS
-    if not samples:
-        return []
-    ranges = _segment_sample_ranges([(item[0], item[2]) for item in samples])
-    windows = []
-    for left, right in ranges:
-        chunk = samples[left:right]
-        start_ms = chunk[0][0]
-        end_ms = min(round(duration * 1000), max(start_ms + round(MIN_SCENE_SECONDS * 1000),
-                                                  samples[right][0] if right < len(samples) else round(duration * 1000)))
-        strongest = max(range(len(chunk)), key=lambda item: chunk[item][2])
-        chosen = {len(chunk) // 2, strongest}
-        if max(item[2] for item in chunk) >= SCENE_THRESHOLD * 1.5:
-            chosen.add(max(0, strongest - 1))
-            chosen.add(min(len(chunk) - 1, strongest + 1))
-        windows.append((start_ms, end_ms, [chunk[item] for item in sorted(chosen)]))
-    return windows
+    def decoded_samples() -> Iterator[tuple[int, Any, float]]:
+        previous = None
+        target = 0.0
+        with av.open(str(path), metadata_errors="ignore") as container:
+            stream = next((item for item in container.streams if item.type == "video"), None)
+            if stream is None:
+                raise RuntimeError("不包含视频流")
+            stream.thread_type = "AUTO"
+            for frame in container.decode(stream):
+                timestamp = float((frame.pts or 0) * frame.time_base)
+                if timestamp + 0.001 < target:
+                    continue
+                rgb = frame.to_ndarray(format="rgb24")
+                analysis = cv2.resize(rgb, (160, 90), interpolation=cv2.INTER_AREA)
+                gray = cv2.cvtColor(analysis, cv2.COLOR_RGB2GRAY)
+                motion = 0.0 if previous is None else float(np.mean(cv2.absdiff(gray, previous)))
+                yield round(timestamp * 1000), _compact_rgb(rgb), motion
+                previous = gray
+                while target <= timestamp:
+                    target += 1.0 / SCENE_FPS
+
+    yield from _iter_scene_windows(decoded_samples(), round(duration * 1000))
+
+
+def _effective_batch_size(requested: int, resource_policy: str, vram_bytes: int) -> int:
+    safe_cap = 8 if vram_bytes < 6 * 1024**3 else 16 if vram_bytes < 10 * 1024**3 else 32
+    policy_cap = {"efficiency": 4, "balanced": 8, "adaptive-full": safe_cap}.get(
+        resource_policy, 8)
+    return min(requested if requested > 0 else policy_cap, safe_cap)
 
 
 def _segment_sample_ranges(samples: list[tuple[int, float]]) -> list[tuple[int, int]]:
@@ -264,6 +300,15 @@ def _record_file_failure(connection: sqlite3.Connection, library_id: str, librar
     connection.commit()
 
 
+def _is_visual_current(connection: sqlite3.Connection, asset_id: str, fingerprint: str) -> bool:
+    return connection.execute(
+        """SELECT 1 FROM assets AS a JOIN media_assets AS m ON m.asset_id=a.id
+           WHERE a.id=? AND a.fast_fingerprint=? AND a.status='Indexed'
+             AND m.status='Indexed' AND m.visual_version=? LIMIT 1""",
+        (asset_id, fingerprint, CLIP_VERSION),
+    ).fetchone() is not None
+
+
 def _speech_window_groups(rows: list[tuple[str, int, int, str]]) -> list[tuple[int, int, list[tuple[str, int, int, str]]]]:
     """Group transcript segments into deterministic 8–30 second semantic windows."""
     groups: list[list[tuple[str, int, int, str]]] = []
@@ -318,13 +363,14 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
         interval_seconds: float, batch_size: int,
         decoder_workers: int, extra_models_root: Path, speech_enabled: bool, speech_model: str,
         ocr_models_root: Path, ocr_enabled: bool, resource_policy: str) -> None:
-    del interval_seconds, decoder_workers, resource_policy
+    del interval_seconds
     import cv2
     import numpy as np
     import open_clip
     import torch
 
-    require_v1_hardware(detect(str(data_root)))
+    capabilities = detect(str(data_root))
+    require_v1_hardware(capabilities)
     clip_checkpoint = models_root / "openclip-standard" / "open_clip_pytorch_model.bin"
     bge_root = text_models_root / "bge-small"
     if not clip_checkpoint.is_file() or not bge_root.is_dir():
@@ -351,17 +397,24 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                         len(files), 0, 0, None))
     connection.commit()
     completed = 0
+    skipped = 0
     segments_indexed = 0
     failures: list[str] = []
+    effective_batch = _effective_batch_size(batch_size, resource_policy, capabilities.vram_bytes)
+    effective_decoders = 1  # PyAV currently uses one bounded decode stream per index process.
 
     def status(stage: str, current: Path | None = None, error: str | None = None) -> None:
         _atomic_json(status_path, {
             "truthful": True, "runId": run_id, "status": stage, "library": str(library),
             "currentFile": str(current) if current else None, "filesTotal": len(files),
             "filesCompleted": completed, "filesFailed": len(failures), "segmentsIndexed": segments_indexed,
+            "filesSkipped": skipped,
             "progress": (completed + len(failures)) / max(1, len(files)), "samplingMode": "scene-2fps",
             "sceneThreshold": SCENE_THRESHOLD, "sceneMinimumSeconds": MIN_SCENE_SECONDS,
             "sceneMaximumSeconds": MAX_SCENE_SECONDS, "device": "cuda:0",
+            "gpu": capabilities.gpu_name or "NVIDIA GPU", "cuda": capabilities.cuda_version,
+            "cpuThreads": capabilities.logical_processors, "decoderWorkers": effective_decoders,
+            "batchSize": effective_batch,
             "model": CLIP_MODEL_NAME, "modelVersion": CLIP_VERSION, "error": error, "updatedUtc": _utc(),
         })
 
@@ -369,10 +422,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
         while pause_path.exists() and not cancel_path.exists():
             time.sleep(0.25)
 
-    status("LoadingVisualModel")
-    model, _, _ = open_clip.create_model_and_transforms(CLIP_MODEL_NAME, pretrained=str(clip_checkpoint), device="cuda:0")
-    model.half().eval()
-    effective_batch = batch_size if batch_size > 0 else 32
+    model = None
     try:
         for path in files:
             if cancel_path.exists():
@@ -381,10 +431,20 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             status("Visual", path)
             asset_id = _stable_id("asset", str(path.resolve()).casefold())
             try:
-                duration, width, height, fps, codec = _media_info(path)
                 stat = path.stat()
                 modified = datetime.fromtimestamp(stat.st_mtime, UTC).isoformat()
                 fingerprint = hashlib.sha256(f"{stat.st_size}|{stat.st_mtime_ns}|{path.name}".encode()).hexdigest()
+                if _is_visual_current(connection, asset_id, fingerprint):
+                    completed += 1
+                    skipped += 1
+                    status("Visual", path)
+                    continue
+                if model is None:
+                    status("LoadingVisualModel", path)
+                    model, _, _ = open_clip.create_model_and_transforms(
+                        CLIP_MODEL_NAME, pretrained=str(clip_checkpoint), device="cuda:0")
+                    model.half().eval()
+                duration, width, height, fps, codec = _media_info(path)
                 connection.execute("""INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(id) DO UPDATE SET size_bytes=excluded.size_bytes,modified_utc=excluded.modified_utc,
                     fast_fingerprint=excluded.fast_fingerprint,duration_ms=excluded.duration_ms,width=excluded.width,
@@ -401,9 +461,8 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                 old_points = [row[0] for row in connection.execute(
                     "SELECT id FROM visual_segments WHERE asset_id=?", (asset_id,))]
                 connection.execute("DELETE FROM visual_segments WHERE asset_id=?", (asset_id,))
-                windows = _scene_windows(path, duration)
                 new_points: set[str] = set()
-                for start_ms, end_ms, representatives in windows:
+                for start_ms, end_ms, representatives in _scene_windows(path, duration):
                     tensors = torch.stack([_clip_tensor(rgb) for _, rgb, _ in representatives])
                     chunks = []
                     for offset in range(0, len(tensors), effective_batch):
@@ -448,8 +507,9 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             # resumed deterministically without mislabelling the source video.
             qdrant.replay_all(connection)
             completed += 1
-        del model
-        torch.cuda.empty_cache()
+        if model is not None:
+            del model
+            torch.cuda.empty_cache()
 
         if speech_enabled:
             status("LoadingSpeechModel")
