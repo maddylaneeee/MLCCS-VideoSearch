@@ -40,6 +40,25 @@ function Receive-ResumableFile([string]$Uri, [string]$Destination) {
   }
 }
 
+function Invoke-NativeCommand([string]$FilePath, [string[]]$Arguments, [string]$FailureMessage) {
+  $stdout = Join-Path $downloadRoot 'native-command.stdout.log'
+  $stderr = Join-Path $downloadRoot 'native-command.stderr.log'
+  Remove-Item -LiteralPath $stdout,$stderr -Force -ErrorAction SilentlyContinue
+  $previousPreference = $ErrorActionPreference
+  try {
+    # Windows PowerShell 5.1 turns any native stderr line into an ErrorRecord.
+    # Capture both streams before applying the real process exit-code gate.
+    $ErrorActionPreference = 'Continue'
+    & $FilePath @Arguments 1> $stdout 2> $stderr
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  if (Test-Path -LiteralPath $stdout) { Get-Content -LiteralPath $stdout | Write-Output }
+  if (Test-Path -LiteralPath $stderr) { Get-Content -LiteralPath $stderr | Write-Output }
+  if ($exitCode -ne 0) { throw "$FailureMessage (exit $exitCode)" }
+}
+
 function Get-VerifiedFile($artifact) {
   $destination = Join-Path $downloadRoot $artifact.filename
   if (Test-Path $destination) {
@@ -74,8 +93,6 @@ $pth = Get-ChildItem $runtimeRoot -Filter 'python*._pth' | Select-Object -First 
 (Get-Content $pth.FullName) -replace '^#import site$', 'import site' | Set-Content -Encoding ascii $pth.FullName
 
 $getPip = Get-VerifiedFile ($manifest.artifacts | Where-Object kind -eq 'get-pip')
-& (Join-Path $runtimeRoot 'python.exe') $getPip --disable-pip-version-check
-if ($LASTEXITCODE) { throw 'Private runtime pip bootstrap failed.' }
+Invoke-NativeCommand (Join-Path $runtimeRoot 'python.exe') @($getPip,'--disable-pip-version-check') 'Private runtime pip bootstrap failed.'
 foreach ($wheel in $manifest.artifacts | Where-Object kind -eq 'python-wheel') { Get-VerifiedFile $wheel | Out-Null }
-& (Join-Path $runtimeRoot 'python.exe') -m pip install --no-index --find-links $downloadRoot --require-hashes -r (Join-Path $projectRoot 'worker/requirements.hashed.txt')
-if ($LASTEXITCODE) { throw 'Private runtime dependency installation failed.' }
+Invoke-NativeCommand (Join-Path $runtimeRoot 'python.exe') @('-m','pip','install','--no-index','--find-links',$downloadRoot,'--require-hashes','-r',(Join-Path $projectRoot 'worker/requirements.hashed.txt')) 'Private runtime dependency installation failed.'
