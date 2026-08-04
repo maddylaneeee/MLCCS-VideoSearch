@@ -14,7 +14,10 @@ REQUIRED = {
     "UPDATE_PUBLISHING.md", "WINDOWS_ACCEPTANCE.md", "CHANGELOG.md", "SECURITY.md",
     "CONTRIBUTING.md", "SUPPORT.md", "release-notes.md",
 }
-IGNORED_PARTS = {"artifacts", "bin", "obj", ".git", "__pycache__", ".pytest_cache", "retained", "evidence", "history"}
+IGNORED_PARTS = {
+    "artifacts", "bin", "obj", ".git", ".tools", ".dotnet", ".nuget",
+    "__pycache__", ".pytest_cache", "retained", "evidence", "history",
+}
 
 
 def fail(message: str) -> None:
