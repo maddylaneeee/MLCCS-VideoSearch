@@ -236,6 +236,9 @@ def _refresh_fts(connection: sqlite3.Connection, asset_id: str, filename: str) -
 def _record_file_failure(connection: sqlite3.Connection, library_id: str, library_root: str,
                          path: Path, asset_id: str, error: Exception) -> None:
     """Persist a discoverable file-level failure even when media probing never completed."""
+    # Discard partially generated segments/outbox rows for this file before recording the
+    # durable failure. Earlier files and the run/library rows have already been committed.
+    connection.rollback()
     try:
         stat = path.stat()
         size = stat.st_size
@@ -436,11 +439,15 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     (thumbnail[0] if thumbnail else None, _utc(), CLIP_VERSION, asset_id))
                 _refresh_fts(connection, asset_id, path.name)
                 connection.commit()
-                qdrant.replay_all(connection)
-                completed += 1
             except Exception as error:
                 failures.append(f"{path.name}: {error}")
                 _record_file_failure(connection, library_id, str(library), path, asset_id, error)
+                continue
+            # A Qdrant outage is an infrastructure failure, not a corrupt-media failure.
+            # SQLite and its Outbox are already durable, so the outer job failure can be
+            # resumed deterministically without mislabelling the source video.
+            qdrant.replay_all(connection)
+            completed += 1
         del model
         torch.cuda.empty_cache()
 

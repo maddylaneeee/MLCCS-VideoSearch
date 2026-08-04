@@ -115,12 +115,19 @@ class WorkerTests(unittest.TestCase):
             try:
                 connection.execute("INSERT INTO libraries VALUES(?,?,?,?,?)",
                                    ("library", "test", str(root), 1, "2026-08-04T00:00:00Z"))
+                connection.commit()
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,status) VALUES('asset','library',?,1,'now','f','video','Indexing')""",
+                                   (str(video),))
+                connection.execute("INSERT INTO visual_segments VALUES('partial','asset',0,1000,'[]','x',1,'m')")
                 _record_file_failure(connection, "library", str(root), video, "asset",
                                      RuntimeError("decode failed"))
                 self.assertEqual(("Failed", "decode failed", 0), connection.execute(
                     "SELECT status,error,duration_ms FROM media_assets WHERE asset_id='asset'").fetchone())
                 self.assertEqual("MEDIA_DECODE_FAILED", connection.execute(
                     "SELECT error_code FROM assets WHERE id='asset'").fetchone()[0])
+                self.assertEqual(0, connection.execute(
+                    "SELECT count(*) FROM visual_segments WHERE asset_id='asset'").fetchone()[0])
             finally:
                 connection.close()
 
