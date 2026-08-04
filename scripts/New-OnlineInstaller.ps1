@@ -116,14 +116,9 @@ $setupSource = Join-Path $setupStage 'MLCCS-VideoSearch-Online-Setup.exe'
 $setupTarget = Join-Path $packageRoot "MLCCS-VideoSearch-Online-Setup-$version.exe"
 Copy-Item -LiteralPath $setupSource -Destination $setupTarget
 
-$publication = [ordered]@{
-  version=$version; generatedUtc=[DateTimeOffset]::UtcNow.ToString('O')
-  setup=[ordered]@{ file=(Split-Path -Leaf $setupTarget); size=(Get-Item $setupTarget).Length; sha256=(Get-FileHash $setupTarget -Algorithm SHA256).Hash.ToLowerInvariant() }
-  unsignedManifest=(Split-Path -Leaf $manifestPath)
-  requiredDownloadBytes=($components | Where-Object required | Measure-Object size -Sum).Sum
-  components=@($components | ForEach-Object { [ordered]@{ id=$_.id; file=([Uri]$_.url).Segments[-1]; size=$_.size; sha256=$_.sha256 } })
-}
-Write-Utf8NoBom (Join-Path $outputFull 'publication-record.json') ($publication | ConvertTo-Json -Depth 8)
+python (Join-Path $projectRoot 'scripts/generate_publication_record.py') --manifest $manifestPath `
+  --setup $setupTarget --output (Join-Path $outputFull 'publication-record.json')
+if ($LASTEXITCODE) { throw 'Publication record generation failed.' }
 Copy-Item -LiteralPath (Join-Path $licenseStage 'MLCCS-VideoSearch-1.0.0.cdx.json') -Destination $packageRoot
 Copy-Item -LiteralPath (Join-Path $licenseStage 'THIRD-PARTY-LICENSES.csv') -Destination $packageRoot
 Write-Host "Unsigned v1.0.0 payload ready at $outputFull. Return only manifest metadata to the Mac for production signing."

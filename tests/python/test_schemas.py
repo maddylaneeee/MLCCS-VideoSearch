@@ -49,5 +49,14 @@ class SchemaTests(unittest.TestCase):
             self.assertEqual(["nested/a.txt", "z.txt"], [item["path"] for item in files])
             self.assertEqual(hashlib.sha256(b"alpha").hexdigest(), files[0]["sha256"])
             self.assertEqual("", manifest["manifestSignature"])
+            setup = root / "MLCCS-VideoSearch-Online-Setup-1.0.0.exe"
+            setup.write_bytes(b"setup")
+            publication = root / "publication-record.json"
+            subprocess.run([sys.executable, str(ROOT / "scripts/generate_publication_record.py"),
+                            "--manifest", str(output), "--setup", str(setup),
+                            "--output", str(publication)], check=True)
+            record = json.loads(publication.read_text(encoding="utf-8"))
+            self.assertEqual(1, record["requiredDownloadBytes"])
+            self.assertEqual(hashlib.sha256(b"setup").hexdigest(), record["setup"]["sha256"])
 
 if __name__ == "__main__": unittest.main()
