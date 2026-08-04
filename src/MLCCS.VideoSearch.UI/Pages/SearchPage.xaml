@@ -21,7 +21,8 @@
                     AutomationProperties.Name="按资源文件夹过滤搜索"/>
           <ComboBox x:Name="ExtensionSelector" Header="格式" SelectedIndex="0" MinWidth="105">
             <ComboBoxItem Content="全部" Tag=""/><ComboBoxItem Content="MP4" Tag=".mp4"/><ComboBoxItem Content="MKV" Tag=".mkv"/>
-            <ComboBoxItem Content="MOV" Tag=".mov"/><ComboBoxItem Content="AVI" Tag=".avi"/><ComboBoxItem Content="WebM" Tag=".webm"/>
+            <ComboBoxItem Content="MOV" Tag=".mov"/><ComboBoxItem Content="AVI" Tag=".avi"/><ComboBoxItem Content="WMV" Tag=".wmv"/>
+            <ComboBoxItem Content="M4V" Tag=".m4v"/><ComboBoxItem Content="TS" Tag=".ts"/><ComboBoxItem Content="WebM" Tag=".webm"/>
           </ComboBox>
           <ComboBox x:Name="DurationSelector" Header="时长" SelectedIndex="0" MinWidth="125">
             <ComboBoxItem Content="不限" Tag="any"/><ComboBoxItem Content="1 分钟内" Tag="short"/>
