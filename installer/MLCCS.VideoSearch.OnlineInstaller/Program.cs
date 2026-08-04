@@ -899,32 +899,39 @@ internal sealed class InstallerForm : Form
         CancellationToken cancellationToken,
         IProgress<ItemProgress> progress)
     {
-        for (var index = 0; index < files.Count; index++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            await pauseController.WaitAsync(cancellationToken);
-            var file = files[index];
-            var fullPath = Path.GetFullPath(Path.Combine(
-                destination, file.Path.Replace('/', Path.DirectorySeparatorChar)));
-            if (!fullPath.StartsWith(Path.GetFullPath(destination) + Path.DirectorySeparatorChar,
-                    StringComparison.OrdinalIgnoreCase) ||
-                !File.Exists(fullPath))
+        if (files.Count == 0) return;
+        var destinationRoot = Path.GetFullPath(destination)
+            .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var completed = 0;
+        var parallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 4);
+        await Parallel.ForEachAsync(files,
+            new ParallelOptions
             {
-                throw new InvalidDataException($"安装文件缺失：{file.Path}");
-            }
-            var info = new FileInfo(fullPath);
-            if (info.Length != file.Size)
+                CancellationToken = cancellationToken,
+                MaxDegreeOfParallelism = parallelism
+            },
+            async (file, token) =>
             {
-                throw new InvalidDataException($"安装文件大小不匹配：{file.Path}");
-            }
-            var hash = await ComputeSha256Async(
-                fullPath, pauseController, cancellationToken);
-            if (!hash.Equals(file.Sha256, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidDataException($"安装文件校验失败：{file.Path}");
-            }
-            progress.Report(new ItemProgress(index + 1, files.Count));
-        }
+                await pauseController.WaitAsync(token);
+                var fullPath = Path.GetFullPath(Path.Combine(
+                    destination, file.Path.Replace('/', Path.DirectorySeparatorChar)));
+                if (!fullPath.StartsWith(destinationRoot, StringComparison.OrdinalIgnoreCase) ||
+                    !File.Exists(fullPath))
+                {
+                    throw new InvalidDataException($"安装文件缺失：{file.Path}");
+                }
+                var info = new FileInfo(fullPath);
+                if (info.Length != file.Size)
+                {
+                    throw new InvalidDataException($"安装文件大小不匹配：{file.Path}");
+                }
+                var hash = await ComputeSha256Async(fullPath, pauseController, token);
+                if (!hash.Equals(file.Sha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException($"安装文件校验失败：{file.Path}");
+                }
+                progress.Report(new ItemProgress(Interlocked.Increment(ref completed), files.Count));
+            });
     }
 
     internal static Task ExtractArchiveAsync(

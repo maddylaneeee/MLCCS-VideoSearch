@@ -105,8 +105,9 @@ internal sealed class AgentHost : ApplicationContext
         try
         {
             await new CatalogDatabase(Path.Combine(_root, "catalog.db")).InitializeAsync(cancellationToken);
-            try { _hardwareStatus = await DetectHardwareAsync(cancellationToken); }
-            catch (Exception error) { AppendLog(Path.Combine(_root, "hardware.log"), error.Message); }
+            // IPC must be available even if a driver or hardware probe is slow or wedged.
+            // Indexing waits for a successful probe, but library/settings operations do not.
+            _ = DetectHardwareAtStartupAsync(cancellationToken);
             await Task.WhenAll(AcceptPipeAsync(cancellationToken), QueueLoopAsync(cancellationToken));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -115,6 +116,13 @@ internal sealed class AgentHost : ApplicationContext
             File.WriteAllText(Path.Combine(_root, $"agent-crash-{DateTime.UtcNow:yyyyMMddHHmmss}.log"),
                 DiagnosticRedactor.Redact(exception.ToString(), Environment.UserName));
         }
+    }
+
+    private async Task DetectHardwareAtStartupAsync(CancellationToken cancellationToken)
+    {
+        try { _hardwareStatus = await DetectHardwareAsync(cancellationToken); }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception error) { AppendLog(Path.Combine(_root, "hardware.log"), error.Message); }
     }
 
     private async Task AcceptPipeAsync(CancellationToken cancellationToken)
@@ -616,9 +624,26 @@ internal sealed class AgentHost : ApplicationContext
         foreach (var argument in new[] { "-m", "mlccs_worker.capabilities_cli", "--storage", _root })
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start) ?? throw new InvalidOperationException("无法启动硬件检测。");
-        var output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var error = await process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
+        using var probeCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        probeCancellation.CancelAfter(TimeSpan.FromSeconds(90));
+        var outputTask = process.StandardOutput.ReadToEndAsync(probeCancellation.Token);
+        var errorTask = process.StandardError.ReadToEndAsync(probeCancellation.Token);
+        try
+        {
+            await process.WaitForExitAsync(probeCancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            try { process.Kill(entireProcessTree: true); }
+            catch { }
+            try { await Task.WhenAll(outputTask, errorTask); }
+            catch (OperationCanceledException) { }
+            if (cancellationToken.IsCancellationRequested)
+                throw;
+            throw new TimeoutException("硬件检测超过 90 秒，已终止本次检测；Agent 其他功能仍可使用。");
+        }
+        var output = await outputTask;
+        var error = await errorTask;
         if (process.ExitCode != 0) throw new InvalidOperationException($"硬件检测失败：{error.Trim()}");
         using var document = JsonDocument.Parse(output);
         return document.RootElement.Clone();
@@ -948,8 +973,8 @@ internal sealed class AgentHost : ApplicationContext
                 if (!_pendingLibraries.Contains(library, StringComparer.OrdinalIgnoreCase))
                     _pendingLibraries.Enqueue(library);
             }
-            if (_indexer is null || _indexer.HasExited)
-                StartNextIndexerLocked();
+            // QueueLoop starts the worker. Keeping startup out of the IPC request makes
+            // library.add/library.rescan return immediately even when Qdrant is slow.
         }
     }
 
@@ -1042,7 +1067,7 @@ internal sealed class AgentHost : ApplicationContext
                             $"{library}: {error.Message}");
                     }
                 }
-                if (_pendingLibraries.Count > 0) StartNextIndexerLocked();
+                // QueueLoop starts the next library without holding this exit callback.
             }
         };
         try
