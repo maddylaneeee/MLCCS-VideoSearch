@@ -21,7 +21,8 @@ PYTHON = {
 GET_PIP = {
     "id": "get-pip", "kind": "get-pip", "filename": "get-pip.py", "size": 2226848,
     "sha256": "a341e1a43e38001c551a1508a73ff23636a11970b61d901d9a1cad2a18f57055",
-    "url": "https://bootstrap.pypa.io/get-pip.py", "license": "MIT",
+    "url": "https://raw.githubusercontent.com/pypa/get-pip/5e84c8360eaf92009551b3eec69d734137f31cec/public/get-pip.py",
+    "license": "MIT",
 }
 
 

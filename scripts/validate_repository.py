@@ -47,6 +47,12 @@ def main() -> int:
     dependencies = json.loads((ROOT / "worker/manifests/dependencies.lock.json").read_text())
     if len(dependencies.get("artifacts", [])) < 100:
         fail("dependency graph is incomplete")
+    get_pip = next((item for item in dependencies["artifacts"] if item.get("id") == "get-pip"), None)
+    if not get_pip or not re.fullmatch(
+        r"https://raw\.githubusercontent\.com/pypa/get-pip/[0-9a-f]{40}/public/get-pip\.py",
+        str(get_pip.get("url", "")),
+    ):
+        fail("get-pip must use an immutable PyPA Git commit URL")
     if any(item.get("package") == "qdrant-edge-py" for item in dependencies["artifacts"]):
         fail("beta qdrant-edge-py must not ship in v1")
     qdrant = json.loads((ROOT / "release/qdrant.lock.json").read_text())
