@@ -1,9 +1,19 @@
 {
   "schemaVersion": 1,
-  "privacy": {"helpImprove": true, "fullLogUploadConsent": false},
-  "indexing": {"filename": true, "visual": true, "speech": false, "ocr": false, "background": true, "batteryPolicy": "reduced", "concurrency": "adaptive"},
-  "search": {"phoneticExpansion": "medium"},
-  "updates": {"automaticCheck": true, "channel": "stable", "skippedVersion": null},
-  "storage": {"dataRoot": "D:\\VideoSearchData", "modelRoot": "D:\\VideoSearchData\\models", "cacheRoot": "D:\\VideoSearchData\\cache", "indexRoot": "D:\\VideoSearchData\\index", "cacheLimitBytes": 21474836480}
+  "libraries": ["D:\\VideoLibrary"],
+  "autoStart": true,
+  "autoIndexNewFiles": true,
+  "intervalSeconds": 4.0,
+  "batchSize": 0,
+  "decoderWorkers": 0,
+  "resourcePolicy": "adaptive-full",
+  "filename": true,
+  "visual": true,
+  "speech": false,
+  "ocr": false,
+  "speechModel": "whisper-medium",
+  "automaticUpdates": true,
+  "skippedVersion": null,
+  "phoneticExpansion": "medium",
+  "searchModelIdleMinutes": 10
 }
-

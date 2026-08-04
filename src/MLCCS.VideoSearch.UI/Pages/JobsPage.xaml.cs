@@ -82,8 +82,10 @@ public sealed partial class JobsPage : Page
             }
             var stage = root.GetProperty("status").GetString() ?? "Unknown";
             var progress = root.GetProperty("progress").GetDouble();
-            var frames = root.GetProperty("framesIndexed").GetInt64();
-            var rate = root.GetProperty("framesPerSecond").GetDouble();
+            var frames = root.TryGetProperty("segmentsIndexed", out var segmentsValue)
+                ? segmentsValue.GetInt64() : 0;
+            var rate = root.TryGetProperty("segmentsPerSecond", out var rateValue)
+                ? rateValue.GetDouble() : 0;
             var current = root.TryGetProperty("currentFile", out var file) && file.ValueKind == JsonValueKind.String
                 ? Path.GetFileName(file.GetString()) : "—";
             var completed = root.TryGetProperty("filesCompleted", out var completedValue) ? completedValue.GetInt32() : 0;

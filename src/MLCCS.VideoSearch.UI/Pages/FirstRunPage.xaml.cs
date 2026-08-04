@@ -9,6 +9,7 @@ public sealed partial class FirstRunPage : Page
 {
     private string? _libraryPath;
     private bool _cudaAvailable;
+    private bool _hardwareSupported;
     private string _speechModel = "whisper-medium";
 
     public FirstRunPage()
@@ -23,26 +24,35 @@ public sealed partial class FirstRunPage : Page
         {
             var hardware = await AgentClient.RequestAsync("hardware.detect");
             _cudaAvailable = hardware.GetProperty("cuda_available").GetBoolean();
+            _hardwareSupported = hardware.GetProperty("supported").GetBoolean();
             var cpu = hardware.GetProperty("cpu").GetString();
             var logical = hardware.GetProperty("logical_processors").GetInt32();
             var memory = hardware.GetProperty("memory_bytes").GetInt64();
             var gpu = hardware.TryGetProperty("gpu_name", out var gpuValue) && gpuValue.ValueKind == JsonValueKind.String
                 ? gpuValue.GetString() : "未检测到 CUDA GPU";
             var vram = hardware.GetProperty("vram_bytes").GetInt64();
-            HardwareText.Text = $"{cpu} · {logical} 个逻辑处理器 · {MLCCS.VideoSearch.UI.Models.MediaItemViewModel.FormatBytes(memory)} 内存\n{gpu} · {MLCCS.VideoSearch.UI.Models.MediaItemViewModel.FormatBytes(vram)} 显存";
+            var windows = hardware.GetProperty("windows_version").GetString() ?? "未知 Windows 版本";
+            var driver = hardware.TryGetProperty("driver_version", out var driverNode) &&
+                         driverNode.ValueKind == JsonValueKind.String ? driverNode.GetString() : "未检测到";
+            var cudaVersion = hardware.TryGetProperty("cuda_version", out var cudaNode) &&
+                              cudaNode.ValueKind == JsonValueKind.String ? cudaNode.GetString() : "不可用";
+            HardwareText.Text = $"Windows {windows} · {cpu} · {logical} 个逻辑处理器 · {MLCCS.VideoSearch.UI.Models.MediaItemViewModel.FormatBytes(memory)} 内存\n" +
+                                $"{gpu} · {MLCCS.VideoSearch.UI.Models.MediaItemViewModel.FormatBytes(vram)} 显存 · NVIDIA 驱动 {driver} · PyTorch CUDA {cudaVersion}（{(_cudaAvailable ? "可用" : "不可用")}）";
             var recommendation = hardware.GetProperty("whisperRecommendation");
             _speechModel = $"whisper-{recommendation.GetProperty("model").GetString()}";
-            RecommendationText.Text = _cudaAvailable
+            RecommendationText.Text = _hardwareSupported
                 ? $"语音模型建议：{recommendation.GetProperty("tier").GetString()}（{recommendation.GetProperty("model").GetString()} / {recommendation.GetProperty("compute_type").GetString()}）"
-                : "此机器没有可用 CUDA：语音索引已禁用；文件名、视觉 CPU 和受支持 OCR 仍可工作。";
-            SpeechCheck.IsEnabled = _cudaAvailable;
-            SpeechCheck.IsChecked = _cudaAvailable;
+                : $"此机器不满足 v1.0.0 要求，索引和搜索已阻止：{string.Join("；", hardware.GetProperty("support_issues").EnumerateArray().Select(item => item.GetString()))}。请更新 Windows/NVIDIA 驱动；无需另装 CUDA Toolkit。";
+            SpeechCheck.IsEnabled = _hardwareSupported;
+            OcrCheck.IsEnabled = _hardwareSupported;
+            SpeechCheck.IsChecked = _hardwareSupported;
         }
         catch (Exception error)
         {
             HardwareText.Text = $"硬件检测失败：{error.Message}";
             RecommendationText.Text = "仍可配置资源库，但语音索引保持关闭。";
             SpeechCheck.IsEnabled = false;
+            OcrCheck.IsEnabled = false;
         }
         finally
         {
@@ -56,7 +66,7 @@ public sealed partial class FirstRunPage : Page
         _libraryPath = await FolderPickerService.PickAsync();
         if (_libraryPath is null) return;
         LibraryPathText.Text = _libraryPath;
-        StartButton.IsEnabled = true;
+        StartButton.IsEnabled = _hardwareSupported;
     }
 
     private async void Start_Click(object sender, RoutedEventArgs e)
@@ -79,12 +89,12 @@ public sealed partial class FirstRunPage : Page
                 decoderWorkers = 0,
                 resourcePolicy = "adaptive-full",
                 filename = true,
-                visual = VisualCheck.IsChecked == true,
+                visual = true,
                 speech = _cudaAvailable && SpeechCheck.IsChecked == true,
                 ocr = OcrCheck.IsChecked == true,
                 speechModel = _speechModel,
-                helpImprove = HelpImproveToggle.IsOn,
                 automaticUpdates = true,
+                searchModelIdleMinutes = 10,
                 phoneticExpansion = "medium"
             });
             var prefixes = new List<string>();

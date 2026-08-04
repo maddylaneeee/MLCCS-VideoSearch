@@ -6,15 +6,17 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Win32;
+using MLCCS.VideoSearch.Core.Updates;
+using MLCCS.VideoSearch.Core.Privacy;
 
 namespace MLCCS.VideoSearch.OnlineInstaller;
 
 internal static class Program
 {
     internal const string ProductName = "MLCCS VideoSearch";
-    internal const string Version = "0.3.0-feedback5";
+    internal const string Version = "1.0.0";
     internal const string ManifestUrl =
-        "https://lixinchen.ca/docs/mlccs-video-search/0.3.0-feedback5/installer-manifest.json";
+        "https://lixinchen.ca/docs/mlccs-video-search/1.0.0/release-manifest.json";
     internal const string UninstallKey =
         @"Software\Microsoft\Windows\CurrentVersion\Uninstall\MLCCSVideoSearch";
 
@@ -49,6 +51,12 @@ internal static class Program
             {
                 FinalizeUninstall(args[1], args.Any(argument =>
                     argument.Equals("--quiet", StringComparison.OrdinalIgnoreCase)));
+                return;
+            }
+
+            if (args.Any(argument => argument.Equals("--quiet", StringComparison.OrdinalIgnoreCase)))
+            {
+                SilentInstaller.RunAsync(args).GetAwaiter().GetResult();
                 return;
             }
 
@@ -187,7 +195,7 @@ internal sealed class InstallerForm : Form
     private readonly Button _pauseButton = new();
     private readonly Button _cancelButton = new();
     private readonly Button _browseButton = new();
-    private InstallerManifest? _manifest;
+    private ReleaseManifest? _manifest;
     private CancellationTokenSource? _installCancellation;
     private PauseController? _pauseController;
     private bool _deleteDownloadsOnCancellation;
@@ -354,25 +362,31 @@ internal sealed class InstallerForm : Form
         {
             using var http = CreateHttpClient();
             var json = await http.GetStringAsync(Program.ManifestUrl);
-            _manifest = JsonSerializer.Deserialize<InstallerManifest>(json, JsonOptions)
+            _manifest = JsonSerializer.Deserialize<ReleaseManifest>(json, JsonOptions)
                 ?? throw new InvalidDataException("安装清单为空。");
-            if (!_manifest.Version.Equals(Program.Version, StringComparison.OrdinalIgnoreCase))
+            using (var key = EmbeddedUpdateKey.Create())
+            {
+                if (!UpdateVerifier.VerifyManifest(_manifest, key))
+                    throw new CryptographicException("安装清单签名无效；不会信任其中的版本、网址或哈希。");
+            }
+            if (!_manifest.ProductVersion.Equals(Program.Version, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidDataException(
-                    $"安装清单版本 {_manifest.Version} 与安装器版本 {Program.Version} 不一致。");
+                    $"安装清单版本 {_manifest.ProductVersion} 与安装器版本 {Program.Version} 不一致。");
             }
 
             _components.Items.Clear();
             foreach (var component in _manifest.Components)
             {
-                var index = _components.Items.Add(component,
+                var label = $"{component.Name} {(component.Required ? "（必需）" : "（可选）")} — {component.Description} — {FormatBytes(component.Size)}";
+                var index = _components.Items.Add(label,
                     component.Required || component.DefaultSelected);
                 if (component.Required)
                 {
                     _components.SetItemCheckState(index, CheckState.Checked);
                 }
             }
-            _status.Text = "已就绪。必需组件可提供全部功能；未预下载的模型会在使用时下载。";
+            _status.Text = "已就绪。必需组件提供视觉与文本检索；语音和 OCR 按安装选择启用。";
             _installButton.Enabled = true;
             UpdateDownloadSummary();
             StartupDiagnostics.Write("Installer manifest loaded successfully.");
@@ -425,11 +439,11 @@ internal sealed class InstallerForm : Form
             $"预计下载 {FormatBytes(bytes)}；进度会持久保存，安装并验证完成后删除缓存包。";
     }
 
-    private IReadOnlyList<InstallerComponent> SelectedComponents()
+    private IReadOnlyList<ReleaseComponent> SelectedComponents()
     {
         if (_manifest is null)
         {
-            return Array.Empty<InstallerComponent>();
+            return Array.Empty<ReleaseComponent>();
         }
         return _manifest.Components.Where((component, index) =>
             component.Required || _components.GetItemChecked(index)).ToArray();
@@ -531,6 +545,7 @@ internal sealed class InstallerForm : Form
         var downloadDirectory = GetDownloadCacheDirectory();
         try
         {
+            if (!FeedbackState.ResetIfNeeded(quiet: false, explicitReset: false)) return;
             Directory.CreateDirectory(installDirectory);
             Directory.CreateDirectory(downloadDirectory);
             long completedBytes = 0;
@@ -541,11 +556,11 @@ internal sealed class InstallerForm : Form
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 await _pauseController.WaitAsync(cancellationToken);
-                var archivePath = Path.Combine(downloadDirectory, Path.GetFileName(component.Archive));
+                var archivePath = Path.Combine(downloadDirectory, Path.GetFileName(component.Url.LocalPath));
                 _status.Text = $"正在下载：{component.Name}";
                 await DownloadAsync(
                     http,
-                    component.Url,
+                    component.Url.AbsoluteUri,
                     archivePath,
                     component.Size,
                     _pauseController,
@@ -569,12 +584,7 @@ internal sealed class InstallerForm : Form
                         $"{component.Name} SHA-256 不匹配。损坏的下载包已删除，请重试。");
                 }
 
-                var destination = component.Destination.Equals("localModels",
-                    StringComparison.OrdinalIgnoreCase)
-                    ? Path.Combine(Environment.GetFolderPath(
-                        Environment.SpecialFolder.LocalApplicationData),
-                        "MLCCS", "VideoSearch", "models")
-                    : installDirectory;
+                var destination = ComponentDestination(installDirectory, component);
                 Directory.CreateDirectory(destination);
                 _status.Text = $"正在解压：{component.Name}";
                 await ExtractArchiveAsync(
@@ -796,9 +806,9 @@ internal sealed class InstallerForm : Form
         progress(expectedSize, "下载完成，准备后台校验");
     }
 
-    private static async Task VerifyFilesAsync(
+    internal static async Task VerifyFilesAsync(
         string destination,
-        IReadOnlyList<ManifestFile> files,
+        IReadOnlyList<ReleaseFile> files,
         PauseController pauseController,
         CancellationToken cancellationToken,
         IProgress<ItemProgress> progress)
@@ -888,7 +898,7 @@ internal sealed class InstallerForm : Form
 
     private async Task FinalizeInstallAsync(
         string installDirectory,
-        IReadOnlyList<InstallerComponent> selected)
+        IReadOnlyList<ReleaseComponent> selected)
     {
         if (_manifest is null)
         {
@@ -896,13 +906,17 @@ internal sealed class InstallerForm : Form
         }
         var installerDirectory = Path.Combine(installDirectory, "_installer");
         Directory.CreateDirectory(installerDirectory);
+        Directory.CreateDirectory(Path.Combine(installerDirectory, "downloads"));
         var uninstaller = Path.Combine(installDirectory, "uninstaller.exe");
         File.Copy(Environment.ProcessPath!, uninstaller, overwrite: true);
+        var packagedUpdater = Path.Combine(installDirectory, "current", "updater", "MLCCS.VideoSearch.Updater.exe");
+        if (!File.Exists(packagedUpdater)) throw new FileNotFoundException("安装包缺少更新器。", packagedUpdater);
+        File.Copy(packagedUpdater, Path.Combine(installerDirectory, "MLCCS.VideoSearch.Updater.exe"), overwrite: true);
 
         var record = new
         {
             installedUtc = DateTimeOffset.UtcNow,
-            _manifest.Version,
+            version = _manifest.ProductVersion,
             manifestUrl = Program.ManifestUrl,
             components = selected.Select(component => new
             {
@@ -913,6 +927,7 @@ internal sealed class InstallerForm : Form
         };
         await File.WriteAllTextAsync(Path.Combine(installerDirectory, "installed.json"),
             JsonSerializer.Serialize(record, new JsonSerializerOptions { WriteIndented = true }));
+        FeedbackState.MarkV1Installed();
 
         var entryPoint = Path.Combine(installDirectory, _manifest.EntryPoint);
         var startMenuShortcut = Path.Combine(
@@ -995,12 +1010,12 @@ internal sealed class InstallerForm : Form
             "MLCCS", "VideoSearch", "Installer", "downloads", Program.Version);
     }
 
-    private static void DeleteCachedDownloads(IReadOnlyList<InstallerComponent> components)
+    private static void DeleteCachedDownloads(IReadOnlyList<ReleaseComponent> components)
     {
         var directory = GetDownloadCacheDirectory();
         foreach (var component in components)
         {
-            var archivePath = Path.Combine(directory, Path.GetFileName(component.Archive));
+            var archivePath = Path.Combine(directory, Path.GetFileName(component.Url.LocalPath));
             DeleteIfExists(archivePath);
             DeleteIfExists(archivePath + ".partial");
         }
@@ -1052,10 +1067,134 @@ internal sealed class InstallerForm : Form
         return $"{value:0.#} {units[unit]}";
     }
 
+    internal static string ComponentDestination(string installDirectory, ReleaseComponent component)
+    {
+        if (component.InstallScope.Equals("current", StringComparison.OrdinalIgnoreCase))
+            return Path.Combine(installDirectory, "current");
+        var scope = component.InstallScope switch
+        {
+            "runtime" => "runtime", "qdrant" => "qdrant", "visual-model" => "visual-model",
+            "text-model" => "text-model", "ocr-models" => "ocr-models",
+            _ => throw new InvalidDataException($"未知安装范围：{component.InstallScope}")
+        };
+        return Path.Combine(installDirectory, "components", scope, component.Sha256);
+    }
+
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
+}
+
+internal static class FeedbackState
+{
+    private static string StateRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MLCCS", "VideoSearch");
+
+    internal static void MarkV1Installed()
+    {
+        Directory.CreateDirectory(StateRoot);
+        File.WriteAllText(Path.Combine(StateRoot, "v1-state.marker"), $"1.0.0 {DateTimeOffset.UtcNow:O}");
+    }
+
+    internal static bool ResetIfNeeded(bool quiet, bool explicitReset)
+    {
+        var stateRoot = StateRoot;
+        var marker = Path.Combine(stateRoot, "v1-state.marker");
+        var detected = !File.Exists(marker) && (File.Exists(Path.Combine(stateRoot, "libraries.json")) ||
+                                                File.Exists(Path.Combine(stateRoot, "catalog.db")) ||
+                                                Directory.Exists(Path.Combine(stateRoot, "models")));
+        if (!detected) return true;
+        if (quiet && !explicitReset)
+            throw new InvalidOperationException("FEEDBACK_RESET_REQUIRED: rerun with --reset-feedback; source videos are never deleted.");
+        if (!quiet && MessageBox.Show(
+                "检测到 Feedback 版配置、索引或模型缓存。v1.0.0 需要完整重新开始。\n\n继续将删除这些应用数据，但绝不会删除任何原始视频。是否继续？",
+                "需要重置 Feedback 数据", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            return false;
+        foreach (var file in new[] { "libraries.json", "catalog.db", "catalog.db-wal", "catalog.db-shm",
+                     "real-index-status.json", "real-index.lock", "real-index.pause", "real-index.cancel" })
+        {
+            var path = Path.Combine(stateRoot, file);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        foreach (var directory in new[] { "models", "thumbnails", "qdrant" })
+        {
+            var path = Path.Combine(stateRoot, directory);
+            if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+        }
+        Directory.CreateDirectory(stateRoot);
+        MarkV1Installed();
+        return true;
+    }
+}
+
+internal static class SilentInstaller
+{
+    internal static async Task RunAsync(string[] args)
+    {
+        var reset = args.Any(item => item.Equals("--reset-feedback", StringComparison.OrdinalIgnoreCase));
+        FeedbackState.ResetIfNeeded(quiet: true, explicitReset: reset);
+        var installRootArgument = args.FirstOrDefault(item => item.StartsWith("--install-root=", StringComparison.OrdinalIgnoreCase));
+        var installRoot = Path.GetFullPath(installRootArgument is null
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "MLCCS VideoSearch")
+            : Environment.ExpandEnvironmentVariables(installRootArgument[(installRootArgument.IndexOf('=') + 1)..]));
+        using var http = InstallerForm.CreateHttpClient();
+        var json = await http.GetStringAsync(Program.ManifestUrl);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var manifest = JsonSerializer.Deserialize<ReleaseManifest>(json, options)
+                       ?? throw new InvalidDataException("安装清单为空。");
+        using (var verificationKey = EmbeddedUpdateKey.Create())
+            if (!UpdateVerifier.VerifyManifest(manifest, verificationKey))
+                throw new CryptographicException("安装清单签名无效。");
+        if (manifest.ProductVersion != Program.Version) throw new InvalidDataException("安装清单版本不匹配。");
+        var selected = manifest.Components.Where(item => item.Required || item.DefaultSelected).ToArray();
+        var requiredBytes = selected.Sum(item => item.Size);
+        var drive = new DriveInfo(Path.GetPathRoot(installRoot)!);
+        if (drive.AvailableFreeSpace < requiredBytes * 2 + 1024L * 1024 * 1024)
+            throw new IOException("安装空间不足。");
+        Directory.CreateDirectory(installRoot);
+        var installerRoot = Path.Combine(installRoot, "_installer");
+        var downloads = Path.Combine(installerRoot, "downloads");
+        Directory.CreateDirectory(downloads);
+        var pause = new PauseController();
+        foreach (var component in selected)
+        {
+            var archive = Path.Combine(downloads, Path.GetFileName(component.Url.LocalPath));
+            await InstallerForm.DownloadAsync(http, component.Url.AbsoluteUri, archive, component.Size, pause,
+                CancellationToken.None, (_, detail) => { if (detail is not null) StartupDiagnostics.Write(detail); });
+            var hash = await InstallerForm.ComputeSha256Async(archive, pause, CancellationToken.None);
+            if (!hash.Equals(component.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"{component.Id} SHA-256 mismatch");
+            var destination = InstallerForm.ComponentDestination(installRoot, component);
+            Directory.CreateDirectory(destination);
+            await InstallerForm.ExtractArchiveAsync(archive, destination, pause, CancellationToken.None,
+                new Progress<ItemProgress>());
+            await InstallerForm.VerifyFilesAsync(destination, component.Files, pause, CancellationToken.None,
+                new Progress<ItemProgress>());
+            File.Delete(archive);
+        }
+        var uninstaller = Path.Combine(installRoot, "uninstaller.exe");
+        File.Copy(Environment.ProcessPath!, uninstaller, true);
+        var packagedUpdater = Path.Combine(installRoot, "current", "updater", "MLCCS.VideoSearch.Updater.exe");
+        File.Copy(packagedUpdater, Path.Combine(installerRoot, "MLCCS.VideoSearch.Updater.exe"), true);
+        await File.WriteAllTextAsync(Path.Combine(installerRoot, "installed.json"),
+            JsonSerializer.Serialize(new { version = manifest.ProductVersion, installedUtc = DateTimeOffset.UtcNow,
+                components = selected.Select(item => new { item.Id, item.Sha256 }) },
+                new JsonSerializerOptions { WriteIndented = true }));
+        FeedbackState.MarkV1Installed();
+        var entryPoint = Path.Combine(installRoot, manifest.EntryPoint);
+        Shortcut.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs",
+            "MLCCS", $"{Program.ProductName}.lnk"), entryPoint, installRoot, "本地视频语义搜索");
+        using var key = Registry.CurrentUser.CreateSubKey(Program.UninstallKey);
+        key.SetValue("DisplayName", Program.ProductName);
+        key.SetValue("DisplayVersion", Program.Version);
+        key.SetValue("Publisher", "MLCCS");
+        key.SetValue("InstallLocation", installRoot);
+        key.SetValue("DisplayIcon", entryPoint);
+        key.SetValue("UninstallString", $"\"{uninstaller}\"");
+        key.SetValue("QuietUninstallString", $"\"{uninstaller}\" --uninstall --quiet");
+    }
 }
 
 internal sealed class PauseController
@@ -1153,8 +1292,9 @@ internal static class StartupDiagnostics
         {
             lock (Sync)
             {
+                var safe = DiagnosticRedactor.Redact(message, Environment.UserName);
                 File.AppendAllText(LogPath,
-                    $"{DateTimeOffset.Now:O} [PID {Environment.ProcessId}] {message}{Environment.NewLine}");
+                    $"{DateTimeOffset.Now:O} [PID {Environment.ProcessId}] {safe}{Environment.NewLine}");
             }
         }
         catch
@@ -1202,41 +1342,6 @@ internal static class StartupDiagnostics
             uint type);
     }
 }
-
-internal sealed record InstallerManifest(
-    string Version,
-    string EntryPoint,
-    IReadOnlyList<InstallerComponent> Components);
-
-internal sealed record InstallerComponent(
-    string Id,
-    string Name,
-    string Description,
-    bool Required,
-    bool DefaultSelected,
-    string Archive,
-    string Url,
-    long Size,
-    string Sha256,
-    string Destination,
-    IReadOnlyList<ManifestFile> Files)
-{
-    public override string ToString()
-    {
-        var required = Required ? "（必需）" : "（可选）";
-        return $"{Name} {required} — {Description} — {Format(Size)}";
-    }
-
-    private static string Format(long bytes)
-    {
-        var gigabytes = bytes / 1024d / 1024d / 1024d;
-        return gigabytes >= 1
-            ? $"{gigabytes:0.##} GB"
-            : $"{bytes / 1024d / 1024d:0.#} MB";
-    }
-}
-
-internal sealed record ManifestFile(string Path, long Size, string Sha256);
 
 internal static class Shortcut
 {

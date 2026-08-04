@@ -1,38 +1,120 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MLCCS.VideoSearch.Core.Contracts;
 
 namespace MLCCS.VideoSearch.Core.Updates;
 
-public sealed record UpdateManifest(
-    int ProtocolVersion, string AppVersion, string MinimumCompatibleVersion, Uri DownloadUrl,
-    long Size, string Sha256, string ArchiveSignature, DateTimeOffset PublishedUtc,
-    string ReleaseNotes, bool Mandatory, string ManifestSignature);
+public sealed record ReleaseRequirements(
+    string MinimumWindowsVersion,
+    int MinimumWindowsBuild,
+    string Architecture,
+    string GpuVendor,
+    long MinimumVramBytes,
+    string CudaRuntime,
+    bool CudaToolkitRequired);
+
+public sealed record ReleaseFile(string Path, long Size, string Sha256);
+
+public sealed record ReleaseComponent(
+    string Id,
+    string Name,
+    string Description,
+    Uri Url,
+    string InstallScope,
+    bool Required,
+    bool DefaultSelected,
+    long Size,
+    string Sha256,
+    IReadOnlyList<ReleaseFile> Files);
+
+public sealed record ReleaseManifest(
+    int SchemaVersion,
+    string ProductVersion,
+    string MinimumCompatibleVersion,
+    ReleaseRequirements Requirements,
+    string EntryPoint,
+    DateTimeOffset PublishedUtc,
+    string ReleaseNotes,
+    bool Mandatory,
+    IReadOnlyList<ReleaseComponent> Components,
+    string KeyId,
+    string ManifestSignature);
 
 public static class UpdateVerifier
 {
-    public static bool VerifyManifest(UpdateManifest manifest, ECDsa publicKey)
+    public static byte[] CanonicalBytes(ReleaseManifest manifest)
     {
-        var signature = Convert.FromBase64String(manifest.ManifestSignature);
-        var canonical = JsonSerializer.SerializeToUtf8Bytes(new
+        var canonical = new
         {
-            manifest.ProtocolVersion, manifest.AppVersion, manifest.MinimumCompatibleVersion,
-            downloadUrl = manifest.DownloadUrl.ToString(), manifest.Size, manifest.Sha256,
-            manifest.ArchiveSignature, manifest.PublishedUtc, manifest.ReleaseNotes, manifest.Mandatory
-        }, MLCCS.VideoSearch.Core.Contracts.JsonDefaults.Options);
-        return publicKey.VerifyData(canonical, signature, HashAlgorithmName.SHA256);
+            manifest.SchemaVersion,
+            manifest.ProductVersion,
+            manifest.MinimumCompatibleVersion,
+            Requirements = new
+            {
+                manifest.Requirements.MinimumWindowsVersion,
+                manifest.Requirements.MinimumWindowsBuild,
+                manifest.Requirements.Architecture,
+                manifest.Requirements.GpuVendor,
+                manifest.Requirements.MinimumVramBytes,
+                manifest.Requirements.CudaRuntime,
+                manifest.Requirements.CudaToolkitRequired
+            },
+            manifest.EntryPoint,
+            PublishedUtc = manifest.PublishedUtc.ToUniversalTime().ToString("O"),
+            manifest.ReleaseNotes,
+            manifest.Mandatory,
+            Components = manifest.Components.Select(component => new
+            {
+                component.Id,
+                component.Name,
+                component.Description,
+                Url = component.Url.AbsoluteUri,
+                component.InstallScope,
+                component.Required,
+                component.DefaultSelected,
+                component.Size,
+                component.Sha256,
+                Files = component.Files.Select(file => new { file.Path, file.Size, file.Sha256 }).ToArray()
+            }).ToArray(),
+            manifest.KeyId
+        };
+        return JsonSerializer.SerializeToUtf8Bytes(canonical, JsonDefaults.Options);
     }
 
-    public static async Task VerifyArchiveAsync(Stream archive, UpdateManifest manifest, ECDsa publicKey, CancellationToken cancellationToken)
+    public static bool VerifyManifest(ReleaseManifest manifest, ECDsa publicKey)
     {
-        using var buffer = new MemoryStream();
-        await archive.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-        var bytes = buffer.ToArray();
-        if (bytes.LongLength != manifest.Size) throw new InvalidDataException("UPDATE_SIZE_MISMATCH");
-        var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
-        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(hash), Encoding.ASCII.GetBytes(manifest.Sha256)))
-            throw new InvalidDataException("UPDATE_HASH_MISMATCH");
-        if (!publicKey.VerifyData(bytes, Convert.FromBase64String(manifest.ArchiveSignature), HashAlgorithmName.SHA256))
-            throw new CryptographicException("UPDATE_SIGNATURE_INVALID");
+        if (manifest.SchemaVersion != 1 || manifest.KeyId != "manifest-v1" ||
+            string.IsNullOrWhiteSpace(manifest.ManifestSignature))
+            return false;
+        try
+        {
+            var signature = Convert.FromBase64String(manifest.ManifestSignature);
+            return signature.Length == 64 && publicKey.VerifyData(CanonicalBytes(manifest), signature,
+                HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+        catch (FormatException) { return false; }
     }
+
+    public static async Task VerifyArchiveAsync(Stream archive, ReleaseComponent component,
+        CancellationToken cancellationToken)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var buffer = new byte[1024 * 1024];
+        long size = 0;
+        int read;
+        while ((read = await archive.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            hash.AppendData(buffer, 0, read);
+            size += read;
+        }
+        if (size != component.Size) throw new InvalidDataException("UPDATE_SIZE_MISMATCH");
+        var actual = Convert.ToHexStringLower(hash.GetHashAndReset());
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(actual),
+                Encoding.ASCII.GetBytes(component.Sha256.ToLowerInvariant())))
+            throw new InvalidDataException("UPDATE_HASH_MISMATCH");
+    }
+
+    public static string PublicKeyFingerprint(ECDsa key) =>
+        Convert.ToHexStringLower(SHA256.HashData(key.ExportSubjectPublicKeyInfo()));
 }

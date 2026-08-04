@@ -7,8 +7,4 @@
     <PackageReference Include="coverlet.collector" Version="6.0.4"><PrivateAssets>all</PrivateAssets></PackageReference>
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../src/MLCCS.VideoSearch.Core/MLCCS.VideoSearch.Core.csproj"/></ItemGroup>
-  <ItemGroup>
-    <None Include="../../release/update-sample/manifest.json" Link="update-sample/manifest.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../release/update-sample/sample-update.zip" Link="update-sample/sample-update.zip" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

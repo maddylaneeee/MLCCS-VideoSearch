@@ -4,15 +4,13 @@ namespace MLCCS.VideoSearch.Core.Updates;
 
 public static class EmbeddedUpdateKey
 {
-    // Acceptance-only key. WINDOWS_HANDOFF requires replacing this public key before stable publication.
-    // The matching private key is never stored in source, logs, release archives or handoff packages.
+    // Production P-256 manifest key. The private key is kept only in encrypted PKCS#8 form on the release Mac.
     private const string PublicPem = """
         -----BEGIN PUBLIC KEY-----
-        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELEKtLmu9Y7/9vju7Z4yIqyZ7a3ik
-        atOqDfXnRiFo6sg3CzmKVnpIrGwouMK1rjKkdqGP0mpr9dlDmft22MC1yg==
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsj6Tq3Dvm0jOeAKWUihiRVeUOBjm
+        vJAryVn3kWM0thmccVb78XIXMNaj63nxtUzmq+lYyQUu1EgbQVW475dRHw==
         -----END PUBLIC KEY-----
         """;
 
     public static ECDsa Create() { var key = ECDsa.Create(); key.ImportFromPem(PublicPem); return key; }
 }
-

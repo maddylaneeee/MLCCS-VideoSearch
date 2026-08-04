@@ -1,32 +1,26 @@
-# Signed update publishing
+# v1.0.0 publication
 
-Stable manifest URL: `https://lixinchen.ca/downloads/mlccs-videosearch/stable/latest.json`. Version files live under `stable/<version>/`.
+`release/version.json` is the release version source. Windows/MLCCS or the approved CRC target builds the final immutable components and creates an unsigned `release-manifest.json`. Production signing never occurs on Windows, CI, MLCCS, CRC, FileShare, or the server.
 
-The source contains only an acceptance public key. The matching acceptance private key remains outside the project in macOS `Desktop/temp` and is excluded from handoff. Before stable release, generate a production P-256 key in controlled storage, replace the embedded public key, rebuild and repeat update acceptance. Never put a private key in source, logs, scripts, ZIPs or FileShare.
+On the release Mac, sign with:
 
-## Create a signed version
-
-```powershell
-& .\scripts\New-SignedUpdate.ps1 `
-  -Archive .\artifacts\portable\MLCCS-VideoSearch-0.1.0-win-x64.zip `
-  -ExternalPrivateKey 'X:\secure\mlccs-videosearch-production-private.pem' `
-  -Version 0.1.0 `
-  -MinimumVersion 0.1.0 `
-  -DownloadUrl 'https://lixinchen.ca/downloads/mlccs-videosearch/stable/0.1.0/MLCCS-VideoSearch-0.1.0-win-x64.zip'
+```bash
+./scripts/Sign-ReleaseManifest.sh artifacts/release/1.0.0/release-manifest.unsigned.json \
+  artifacts/release/1.0.0/release-manifest.json
 ```
 
-The manifest contains protocol/app/minimum versions, HTTPS URL, size, SHA-256, archive signature, UTC publication time, notes, mandatory flag and manifest signature.
+The script reads the encrypted PKCS#8 password directly from macOS Keychain and pipes it to the signing tool over standard input. It never places the password in arguments, environment variables, logs, Git, or chat. The tool uses ECDSA P-256/SHA-256 with fixed-width P1363 signatures and immediately self-verifies the result.
 
-## Two-phase publication
+Publish in this order:
 
-1. Upload the versioned ZIP, manifest/signature and release notes under `stable/<version>/`.
-2. From an external client, verify HTTPS, byte size, SHA-256, signature and HTTP Range resume.
-3. Exercise test-channel update, tamper rejection, insufficient disk, file occupancy, safe process exit, database compatibility and health-check rollback.
-4. Only then atomically replace `stable/latest.json` with the verified manifest.
+1. Back up current web metadata.
+2. Upload immutable component archives to `/docs/mlccs-video-search/1.0.0/`.
+3. Upload `MLCCS-VideoSearch-Online-Setup-1.0.0.exe`.
+4. Upload the signed versioned `release-manifest.json`.
+5. Re-download installer/Manifest from the public URL and verify size, SHA-256, Manifest signature, byte ranges, and every component HEAD.
+6. Merge the release PR after required CI succeeds; create and push tag `v1.0.0`.
+7. Create the GitHub Release with the installer, signed Manifest, `SHA256SUMS`, SBOM, and third-party license inventory.
+8. Only after the GitHub Release is healthy, atomically publish the same signed document as stable `latest.json`.
+9. Verify README, GitHub, lixinchen.ca, setup, and the app update channel all identify `1.0.0` and identical hashes.
 
-The app only checks automatically by default. It never silently installs/restarts. The prompt offers Update now, Later and Skip this version. Disabling checks prevents proactive network checks.
-
-## Rollback
-
-If download metadata is wrong, atomically restore the prior `latest.json`; never overwrite a versioned directory in place. If the package is faulty, publish a new higher version after fixing it. Client-side updater retains `previous`, promotes staging atomically and restores it when the new UI health probe fails.
-
+Never overwrite the published `1.0.0` directory or tag. To mitigate a release issue, roll back `latest.json` first; retain Feedback payloads only as historical, non-default artifacts.

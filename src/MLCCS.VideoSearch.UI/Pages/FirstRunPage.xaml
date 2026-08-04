@@ -7,14 +7,7 @@
       <TextBlock Text="在本机建立可搜索的视频画面、文件名、语音和画面文字索引。媒体与索引默认不会离开这台电脑。" TextWrapping="Wrap" FontSize="16"/>
       <Border Style="{StaticResource CardBorderStyle}" Padding="18">
         <StackPanel Spacing="10">
-          <TextBlock Text="1  隐私" FontSize="20" FontWeight="SemiBold"/>
-          <ToggleSwitch x:Name="HelpImproveToggle" Header="帮助 MLCCS 改进（匿名低频事件）" IsOn="True"/>
-          <TextBlock Text="不包含路径、媒体、查询、转写或 OCR 正文。完整日志永远需要单次预览和明确同意。" TextWrapping="Wrap" Opacity="0.72"/>
-        </StackPanel>
-      </Border>
-      <Border Style="{StaticResource CardBorderStyle}" Padding="18">
-        <StackPanel Spacing="10">
-          <TextBlock Text="2  硬件与模型" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="1  硬件与模型" FontSize="20" FontWeight="SemiBold"/>
           <ProgressRing x:Name="HardwareProgress" IsActive="True" Width="24" Height="24" HorizontalAlignment="Left"/>
           <TextBlock x:Name="HardwareText" Text="正在使用私有运行时检测 CPU、内存、CUDA 与显存…" TextWrapping="Wrap"/>
           <TextBlock x:Name="RecommendationText" Text="" Opacity="0.72" TextWrapping="Wrap"/>
@@ -22,16 +15,16 @@
       </Border>
       <Border Style="{StaticResource CardBorderStyle}" Padding="18">
         <StackPanel Spacing="10">
-          <TextBlock Text="3  选择资源库" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="2  选择资源库" FontSize="20" FontWeight="SemiBold"/>
           <TextBlock x:Name="LibraryPathText" Text="尚未选择文件夹" TextWrapping="Wrap"/>
           <Button Content="选择媒体文件夹" HorizontalAlignment="Left" Click="ChooseLibrary_Click"/>
         </StackPanel>
       </Border>
       <Border Style="{StaticResource CardBorderStyle}" Padding="18">
         <StackPanel Spacing="10">
-          <TextBlock Text="4  索引内容" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="3  索引内容" FontSize="20" FontWeight="SemiBold"/>
           <CheckBox Content="文件名与基础信息" IsChecked="True" IsEnabled="False"/>
-          <CheckBox x:Name="VisualCheck" Content="视频画面与准确时间点预览" IsChecked="True"/>
+          <CheckBox x:Name="VisualCheck" Content="视频画面与准确时间点预览（必需）" IsChecked="True" IsEnabled="False"/>
           <CheckBox x:Name="SpeechCheck" Content="语音与逐词时间戳"/>
           <CheckBox x:Name="OcrCheck" Content="画面文字与字幕 OCR"/>
           <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12">

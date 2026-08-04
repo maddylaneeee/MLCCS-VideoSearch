@@ -14,7 +14,6 @@ class SchemaTests(unittest.TestCase):
 
     def test_settings(self): self.validate("settings.schema.json", ROOT / "tests/contracts/settings.valid.json")
     def test_update(self): self.validate("update-manifest.schema.json", ROOT / "tests/contracts/update.valid.json")
-    def test_diagnostics(self): self.validate("diagnostics-report.schema.json", ROOT / "tests/contracts/diagnostics.valid.json")
     def test_model_lock(self): self.validate("model-manifest.schema.json", ROOT / "worker/manifests/models.lock.json")
 
 if __name__ == "__main__": unittest.main()

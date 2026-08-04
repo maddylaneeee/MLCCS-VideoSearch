@@ -9,7 +9,7 @@ It does not relicense third-party dependencies, models, libraries, tools, or bin
 - `worker/manifests/model-sources.json`
 - `MODELS_AND_LICENSES.md`
 
-The vendored `worker/vendor/gputil-1.4.0-py3-none-any.whl` remains subject to its upstream license. FFmpeg, libVLC, Python packages, model files, and other runtime components downloaded or assembled for a binary release must be distributed with all notices, source offers, linking conditions, and other obligations required by their own licenses. In particular, the applicable FFmpeg obligations depend on the exact build configuration and whether GPL components are enabled.
+The vendored `worker/vendor/gputil-1.4.0-py3-none-any.whl` remains subject to its upstream license. Python packages, model files, Qdrant and other runtime components downloaded or assembled for a binary release are distributed with the notices and obligations recorded for their exact locked artifacts.
 
 The sample video under `samples/` and acceptance screenshots under `evidence/` are demonstration and evidentiary media. They are not licensed for reuse under the MIT License unless a separate notice explicitly says otherwise.
 

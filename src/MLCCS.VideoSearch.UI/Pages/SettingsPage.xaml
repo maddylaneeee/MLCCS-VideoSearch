@@ -11,10 +11,9 @@
         <ListViewItem Content="资源库" Tag="libraries"/>
         <ListViewItem Content="索引内容" Tag="index"/>
         <ListViewItem Content="模型与质量" Tag="models"/>
-        <ListViewItem Content="性能与后台" Tag="performance"/>
         <ListViewItem Content="搜索与隐私" Tag="search"/>
         <ListViewItem Content="存储管理" Tag="storage"/>
-        <ListViewItem Content="更新与诊断" Tag="diagnostics"/>
+        <ListViewItem Content="更新与日志" Tag="diagnostics"/>
         <ListViewItem Content="关于" Tag="about"/>
       </ListView>
     </StackPanel>
@@ -30,7 +29,6 @@
                             OffContent="资源库变化时不自动扫描"
                             OnContent="检测到新增或修改的视频后自动索引"
                             IsOn="True"/>
-              <ToggleSwitch Header="关闭窗口后保持 Agent 运行" IsOn="True" IsEnabled="False"/>
               <TextBlock Text="长期工作由托盘 Agent 管理。关闭主窗口不会取消索引或搜索服务。" TextWrapping="Wrap" Opacity="0.7"/>
             </StackPanel>
           </Border>
@@ -55,8 +53,8 @@
           <TextBlock Text="索引内容" Style="{StaticResource TitleTextBlockStyle}"/>
           <Border Style="{StaticResource CardBorderStyle}" Padding="18">
             <StackPanel Spacing="14">
-              <CheckBox x:Name="FilenameCheck" Content="文件名与基础信息" IsChecked="True"/>
-              <CheckBox x:Name="VisualCheck" Content="视频画面与时间点预览" IsChecked="True"/>
+              <CheckBox x:Name="FilenameCheck" Content="文件名与基础信息（必需）" IsChecked="True" IsEnabled="False"/>
+              <CheckBox x:Name="VisualCheck" Content="视频画面与时间点预览（必需）" IsChecked="True" IsEnabled="False"/>
               <CheckBox x:Name="SpeechCheck" Content="语音与逐词时间戳（需要 CUDA 和已验证模型）"/>
               <CheckBox x:Name="OcrCheck" Content="画面文字与字幕区域 OCR"/>
               <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12">
@@ -76,23 +74,9 @@
               <RadioButton x:Name="SpeechEconomyRadio" GroupName="SpeechModel" Content="经济 — Whisper small，速度和空间优先"/>
               <RadioButton x:Name="SpeechRecommendedRadio" GroupName="SpeechModel" Content="推荐 — Whisper medium，平衡中文准确率与资源" IsChecked="True"/>
               <RadioButton x:Name="SpeechHighRadio" GroupName="SpeechModel" Content="高质量 — Whisper large-v3，下载和显存占用较高"/>
-              <TextBlock Text="系统会依据每台机器的 CUDA、显存与内存给出建议；选择不会写死并发或批大小。" TextWrapping="Wrap" Opacity="0.72"/>
+              <TextBlock Text="语音模型按需下载；选择更大的模型会增加下载量、索引时间和显存占用。" TextWrapping="Wrap" Opacity="0.72"/>
               <Button Content="下载/校验所选模型" HorizontalAlignment="Left" Click="DownloadModels_Click"/>
               <TextBlock x:Name="ModelStatusText" TextWrapping="Wrap" Opacity="0.72"/>
-            </StackPanel>
-          </Border>
-        </StackPanel>
-      </ScrollViewer>
-      <ScrollViewer x:Name="PerformancePanel" Visibility="Collapsed">
-        <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="16">
-          <TextBlock Text="性能与后台" Style="{StaticResource TitleTextBlockStyle}"/>
-          <Border Style="{StaticResource CardBorderStyle}" Padding="18">
-            <StackPanel Spacing="12">
-              <TextBlock Text="资源策略" FontWeight="SemiBold"/>
-              <RadioButton x:Name="EfficiencyRadio" GroupName="ResourcePolicy" Content="节省资源 — 降低并发，适合电池供电"/>
-              <RadioButton x:Name="BalancedRadio" GroupName="ResourcePolicy" Content="推荐 — 根据温度、磁盘和显存动态调整"/>
-              <RadioButton x:Name="FullRadio" GroupName="ResourcePolicy" Content="全速 — 使用当前机器可安全提供的 CPU/CUDA 资源" IsChecked="True"/>
-              <TextBlock Text="解码器数量、Torch 线程和推理批大小在每台机器上重新探测。这里不会保存本机专用硬件数值。" TextWrapping="Wrap" Opacity="0.72"/>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -107,20 +91,26 @@
               <RadioButton x:Name="PhoneticLow" GroupName="Phonetic" Content="低"/>
               <RadioButton x:Name="PhoneticMedium" GroupName="Phonetic" Content="中（推荐）" IsChecked="True"/>
               <RadioButton x:Name="PhoneticHigh" GroupName="Phonetic" Content="高"/>
-              <ToggleSwitch x:Name="HelpImproveToggle" Header="帮助 MLCCS 改进" IsOn="True"/>
-              <TextBlock Text="仅允许不包含路径、媒体、查询、转写或 OCR 正文的低频匿名事件。完整日志每次上传前都必须预览并明确同意。" TextWrapping="Wrap" Opacity="0.72"/>
+              <TextBlock Text="搜索模型空闲释放" FontWeight="SemiBold" Margin="0,10,0,0"/>
+              <RadioButton x:Name="Idle5Radio" GroupName="SearchIdle" Content="5 分钟"/>
+              <RadioButton x:Name="Idle10Radio" GroupName="SearchIdle" Content="10 分钟（推荐）" IsChecked="True"/>
+              <RadioButton x:Name="Idle30Radio" GroupName="SearchIdle" Content="30 分钟"/>
+              <TextBlock Text="超时后会终止整个搜索 Worker 和空闲的私有 Qdrant，释放 CPU 内存与 NVIDIA 显存；下次搜索会自动重启。" TextWrapping="Wrap" Opacity="0.72"/>
             </StackPanel>
           </Border>
         </StackPanel>
       </ScrollViewer>
       <ScrollViewer x:Name="DiagnosticsPanel" Visibility="Collapsed">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="16">
-          <TextBlock Text="更新与诊断" Style="{StaticResource TitleTextBlockStyle}"/>
+          <TextBlock Text="更新与日志" Style="{StaticResource TitleTextBlockStyle}"/>
           <Border Style="{StaticResource CardBorderStyle}" Padding="18">
             <StackPanel Spacing="14">
               <ToggleSwitch x:Name="AutomaticUpdatesToggle" Header="自动检查更新" IsOn="True"/>
+              <Button Content="立即检查更新" HorizontalAlignment="Left" Click="CheckUpdates_Click"/>
+              <ProgressBar x:Name="UpdateProgress" Visibility="Collapsed" IsIndeterminate="True"/>
+              <TextBlock x:Name="UpdateStatusText" TextWrapping="Wrap" Opacity="0.72"/>
               <Button Content="打开本地状态与日志目录" HorizontalAlignment="Left" Click="OpenLogs_Click"/>
-              <TextBlock Text="更新只负责检测，不会静默安装或重启。诊断上传必须由你逐次确认。" TextWrapping="Wrap" Opacity="0.72"/>
+              <TextBlock Text="更新会先验证签名和全部哈希，并始终要求你确认；不会静默安装或重启。应用不上传诊断或遥测。" TextWrapping="Wrap" Opacity="0.72"/>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -163,8 +153,8 @@
       <ScrollViewer x:Name="AboutPanel" Visibility="Collapsed">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="16">
           <TextBlock Text="关于" Style="{StaticResource TitleTextBlockStyle}"/>
-          <TextBlock Text="MLCCS Video Search 0.3.0-feedback5" FontSize="20"/>
-          <TextBlock Text="协议 1.0 · 本地优先 · Windows x64" Opacity="0.72"/>
+          <TextBlock Text="MLCCS Video Search 1.0.0" FontSize="20"/>
+          <TextBlock Text="协议 1.0 · 本地优先 · Windows x64 · NVIDIA GPU" Opacity="0.72"/>
         </StackPanel>
       </ScrollViewer>
       <TextBlock x:Name="SaveStatus" HorizontalAlignment="Right" VerticalAlignment="Bottom"

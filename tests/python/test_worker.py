@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import io
-import json
 from pathlib import Path
-import struct
 import sys
 import tempfile
 import unittest
@@ -13,46 +10,66 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "worker"))
 
-from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_speech
-from mlccs_worker.contracts import Envelope, WorkerError
-from mlccs_worker.pipe import MAXIMUM_FRAME_BYTES, read_frame, write_frame
-from mlccs_worker.batch_index import _database
+from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_speech, require_v1_hardware
+from mlccs_worker.contracts import WorkerError
+from mlccs_worker.batch_index import _database, _remove_missing_assets, _segment_sample_ranges, _speech_window_groups
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
 
 
 class WorkerTests(unittest.TestCase):
-    def test_framing_round_trip_and_protocol_validation(self):
-        stream = io.BytesIO()
-        request = Envelope.create("worker.health", {"hello": "世界"})
-        write_frame(stream, request)
-        stream.seek(0)
-        self.assertEqual(request, read_frame(stream))
-        bad = request.to_dict(); bad["protocolVersion"] = "2.0"
-        body = json.dumps(bad).encode()
-        with self.assertRaises(WorkerError):
-            read_frame(io.BytesIO(struct.pack("<I", len(body)) + body))
+    def test_scene_analysis_enforces_two_to_eight_second_windows(self):
+        samples = [(index * 500, 40.0 if index == 12 else 0.0) for index in range(41)]
+        ranges = _segment_sample_ranges(samples)
+        durations = [(samples[right][0] if right < len(samples) else 20_000) - samples[left][0]
+                     for left, right in ranges]
+        self.assertTrue(all(2_000 <= value <= 8_000 for value in durations))
+        self.assertIn((0, 12), ranges)
 
-    def test_oversized_frame_is_rejected(self):
-        with self.assertRaises(WorkerError):
-            read_frame(io.BytesIO(struct.pack("<I", MAXIMUM_FRAME_BYTES + 1)))
+    def test_speech_semantic_windows_are_eight_to_thirty_seconds(self):
+        rows = [(f"s{index}", index * 2_000, (index + 1) * 2_000, f"text {index}")
+                for index in range(17)]
+        windows = _speech_window_groups(rows)
+        self.assertTrue(all(8_000 <= end - start <= 30_000 for start, end, _ in windows))
+        self.assertEqual([row[0] for row in rows], [row[0] for _, _, group in windows for row in group])
 
     def test_speech_requires_cuda_and_recommendation_follows_vram(self):
-        capability = Capabilities("Windows", "CPU", 8, 16, 100, None, False, None, 0, False)
+        capability = Capabilities("10.0.17763", "CPU", 8, 16, 100, None, False, None, 0,
+                                  None, False, ("no NVIDIA",), False)
         with self.assertRaisesRegex(WorkerError, "CUDA"):
             require_speech(capability)
+        with self.assertRaisesRegex(WorkerError, "NVIDIA"):
+            require_v1_hardware(capability)
         self.assertEqual("small", recommend_whisper(3 * 1024**3)["model"])
         self.assertEqual("medium", recommend_whisper(5 * 1024**3)["model"])
-        self.assertEqual("large-v3-turbo", recommend_whisper(8 * 1024**3)["model"])
+        self.assertEqual("medium", recommend_whisper(8 * 1024**3)["model"])
+        self.assertEqual("large-v3", recommend_whisper(12 * 1024**3)["model"])
         self.assertEqual("float16", recommend_whisper(12 * 1024**3)["compute_type"])
 
-    def test_live_catalog_schema_supports_preview_and_timed_text(self):
+    def test_production_catalog_schema_uses_sqlite_outbox_without_live_tables(self):
         with tempfile.TemporaryDirectory() as directory:
             connection = _database(Path(directory) / "catalog.db")
             tables = {row[0] for row in connection.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )}
-            self.assertTrue({"media_assets", "real_visual_frames",
-                             "transcript_segments_live", "ocr_observations_live"} <= tables)
+            self.assertTrue({"media_assets", "visual_segments", "transcript_segments",
+                             "speech_windows", "ocr_observations", "vector_outbox", "search_fts"} <= tables)
+            self.assertFalse({"real_visual_frames", "transcript_segments_live",
+                              "ocr_observations_live"} & tables)
+
+    def test_missing_video_removal_queues_vector_deletes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\L',1,'now')")
+            connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                fast_fingerprint,media_kind,status) VALUES('asset','lib','D:\\L\\gone.mp4',1,'now','f','video','Indexed')""")
+            connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                size_bytes,modified_utc,duration_ms,status) VALUES('D:\\L\\gone.mp4','asset','D:\\L','gone.mp4','.mp4',1,'now',1000,'Indexed')""")
+            connection.execute("INSERT INTO visual_segments VALUES('point','asset',0,1000,'[]','x',1,'m')")
+            connection.commit()
+            self.assertEqual(1, _remove_missing_assets(connection, "D:\\L", set(), Path(directory) / "thumbs"))
+            self.assertEqual(("delete", "visual_v1", "point"), connection.execute(
+                "SELECT operation,collection,point_id FROM vector_outbox").fetchone())
+            self.assertEqual(0, connection.execute("SELECT count(*) FROM media_assets").fetchone()[0])
             columns = {row[1] for row in connection.execute("PRAGMA table_info(media_assets)")}
             self.assertTrue({"width", "height", "codec", "thumbnail_path", "visual_version",
                              "speech_version", "ocr_version"} <= columns)
@@ -67,47 +84,35 @@ class WorkerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "catalog.db"
             connection = _database(database)
-            for library, path in (("D:\\A", "D:\\A\\相同名称.mp4"),
-                                  ("D:\\B", "D:\\B\\相同名称.mp4")):
+            for suffix, library, path in (("A", "D:\\A", "D:\\A\\相同名称.mp4"),
+                                          ("B", "D:\\B", "D:\\B\\相同名称.mp4")):
+                library_id = f"library-{suffix}"
+                asset_id = f"asset-{suffix}"
+                connection.execute("INSERT INTO libraries VALUES(?,?,?,?,?)",
+                                   (library_id, suffix, library, 1, "2026-01-01T00:00:00Z"))
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,duration_ms,status) VALUES(?,?,?,?,?,?,?,?,?)""",
+                    (asset_id, library_id, path, 1, "2026-01-01T00:00:00Z", suffix, "video", 1000, "Indexed"))
                 connection.execute(
                     """INSERT INTO media_assets(
-                         media_path,library_root,name,extension,size_bytes,modified_utc,
+                         media_path,asset_id,library_root,name,extension,size_bytes,modified_utc,
                          duration_ms,status)
-                       VALUES(?,?,?,?,?,?,?,?)""",
-                    (path, library, "相同名称.mp4", ".mp4", 1, "2026-01-01T00:00:00Z",
+                       VALUES(?,?,?,?,?,?,?,?,?)""",
+                    (path, asset_id, library, "相同名称.mp4", ".mp4", 1, "2026-01-01T00:00:00Z",
                      1000, "Indexed")
                 )
-                suffix = library[-1]
-                connection.execute(
-                    """INSERT INTO real_visual_frames(
-                         id,run_id,media_path,timestamp_ms,embedding_f16,thumbnail_path,
-                         model_version,device) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"visual-{suffix}", "run", path, 100,
-                     np.array([1.0, 0.0], dtype=np.float16).tobytes(), "",
-                     "openclip-standard-506d40eb", "cpu")
-                )
-                connection.execute(
-                    """INSERT INTO transcript_segments_live(
-                         id,media_path,start_ms,end_ms,text,normalized_text,words_json,
-                         model_version) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"speech-{suffix}", path, 200, 400, "目标台词", "目标台词", "[]", "test")
-                )
-                connection.execute(
-                    """INSERT INTO ocr_observations_live(
-                         id,media_path,timestamp_ms,text,normalized_text,confidence,boxes_json,
-                         model_version) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"ocr-{suffix}", path, 500, "目标字幕", "目标字幕", 0.9, "[]", "test")
-                )
+                connection.execute("INSERT INTO search_fts VALUES(?,?,?,?,?,?,?)",
+                                   (asset_id, "相同名称.mp4", "目标台词", "目标字幕", "", "", ""))
             connection.commit()
             connection.close()
             # Non-visual search must remain available without loading the large
             # CLIP model; the visual vector is stubbed only for that source.
-            engine = SearchEngine(database, Path(directory) / "models-not-installed")
-            for query, source in (("相同", "filename"), ("画面", "visual"),
-                                  ("目标台词", "speech"), ("目标字幕", "ocr")):
-                if source == "visual":
-                    engine._text_vector = lambda _: np.array([1.0, 0.0], dtype=np.float32)
-                results = engine.search(query, source, 60, "off", "D:\\B")
+            class EmptyQdrant:
+                def collection_exists(self, _name): return False
+                def close(self): pass
+            engine = SearchEngine(database, Path(directory) / "models-not-installed", qdrant=EmptyQdrant())
+            for query, source in (("相同", "filename"), ("目标台词", "speech"), ("目标字幕", "ocr")):
+                results = engine.search(query, source, 60, "off", {"libraries": ["D:\\B"]})
                 self.assertEqual(["D:\\B\\相同名称.mp4"],
                                  list(dict.fromkeys(item["path"] for item in results)),
                                  source)

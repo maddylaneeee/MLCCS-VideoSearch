@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.IO.Compression;
 using MLCCS.VideoSearch.OnlineInstaller;
+using MLCCS.VideoSearch.Core.Updates;
 
 var testRoot = Path.Combine(
     Directory.Exists(@"R:\") ? @"R:\" : Path.GetTempPath(),
@@ -129,6 +131,33 @@ try
         throw new InvalidOperationException("Non-Range compatibility download SHA-256 mismatch.");
     }
 
+    var unsafeArchive = Path.Combine(testRoot, "unsafe.zip");
+    using (var archive = ZipFile.Open(unsafeArchive, ZipArchiveMode.Create))
+    {
+        var entry = archive.CreateEntry("../escape.txt");
+        await using var stream = entry.Open();
+        await stream.WriteAsync("unsafe"u8.ToArray());
+    }
+    try
+    {
+        await InstallerForm.ExtractArchiveAsync(unsafeArchive, Path.Combine(testRoot, "extract"),
+            new PauseController(), CancellationToken.None, new Progress<ItemProgress>());
+        throw new InvalidOperationException("Path-traversal archive was accepted.");
+    }
+    catch (InvalidDataException) { }
+
+    var verifiedRoot = Path.Combine(testRoot, "verified");
+    Directory.CreateDirectory(verifiedRoot);
+    await File.WriteAllTextAsync(Path.Combine(verifiedRoot, "payload.txt"), "verified");
+    try
+    {
+        await InstallerForm.VerifyFilesAsync(verifiedRoot,
+            [new ReleaseFile("payload.txt", 8, new string('0', 64))], new PauseController(),
+            CancellationToken.None, new Progress<ItemProgress>());
+        throw new InvalidOperationException("Altered extracted file was accepted.");
+    }
+    catch (InvalidDataException) { }
+
     serverCancellation.Cancel();
     try
     {
@@ -144,6 +173,8 @@ try
     Console.WriteLine("PASS pause-resume");
     Console.WriteLine("PASS background-sha256");
     Console.WriteLine("PASS non-range-fallback");
+    Console.WriteLine("PASS path-traversal-rejection");
+    Console.WriteLine("PASS extracted-file-hash-rejection");
     Console.WriteLine($"RESUMED_FROM={resumedFrom}");
     Console.WriteLine($"SHA256={actualHash}");
 }

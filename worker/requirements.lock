@@ -7,7 +7,6 @@ sentence-transformers==5.0.0
 paddleocr==3.1.0
 paddlepaddle==3.1.0
 GPUtil==1.4.0
-qdrant-edge-py==0.6.0
 av==15.0.0
 numpy==2.2.6
 Pillow==11.3.0

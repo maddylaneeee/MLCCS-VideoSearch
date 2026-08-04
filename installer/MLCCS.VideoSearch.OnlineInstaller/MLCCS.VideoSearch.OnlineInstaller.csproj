@@ -7,12 +7,13 @@
     <Nullable>enable</Nullable>
     <AssemblyName>MLCCS-VideoSearch-Online-Setup</AssemblyName>
     <RootNamespace>MLCCS.VideoSearch.OnlineInstaller</RootNamespace>
-    <Version>0.3.0</Version>
+    <Version>1.0.0</Version>
     <Company>MLCCS</Company>
     <Product>MLCCS VideoSearch 在线安装器</Product>
     <ApplicationIcon>..\..\assets\MLCCS.VideoSearch.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\MLCCS.VideoSearch.Core\MLCCS.VideoSearch.Core.csproj" />
     <InternalsVisibleTo Include="MLCCS.VideoSearch.Installer.Acceptance" />
   </ItemGroup>
 </Project>

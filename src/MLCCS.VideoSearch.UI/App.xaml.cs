@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using MLCCS.VideoSearch.Core.Privacy;
 
 namespace MLCCS.VideoSearch.UI;
 
@@ -46,7 +47,8 @@ public partial class App : Application
         {
             var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MLCCS", "VideoSearch");
             Directory.CreateDirectory(root);
-            File.WriteAllText(Path.Combine(root, "ui-startup-crash.log"), exception.ToString());
+            File.WriteAllText(Path.Combine(root, "ui-startup-crash.log"),
+                DiagnosticRedactor.Redact(exception.ToString(), Environment.UserName));
         }
         catch { }
     }

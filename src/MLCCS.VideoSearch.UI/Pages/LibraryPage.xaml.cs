@@ -124,7 +124,8 @@ public sealed partial class LibraryPage : Page
             if (payload.TryGetProperty("workerStatus", out var worker) && worker.ValueKind == JsonValueKind.Object)
             {
                 var stage = worker.GetProperty("status").GetString() ?? "Unknown";
-                var frames = worker.GetProperty("framesIndexed").GetInt64();
+                var frames = worker.TryGetProperty("segmentsIndexed", out var segmentNode)
+                    ? segmentNode.GetInt64() : 0;
                 var progress = worker.GetProperty("progress").GetDouble();
                 var running = payload.TryGetProperty("indexerRunning", out var runningNode) && runningNode.GetBoolean();
                 var workerUpdated = worker.TryGetProperty("updatedUtc", out var updatedNode) &&

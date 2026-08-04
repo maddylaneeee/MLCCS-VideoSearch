@@ -1,0 +1,18 @@
+name: Bug report
+description: Report a reproducible v1 problem
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private media, paths, queries, transcripts, OCR text, API keys, or full logs.
+  - type: input
+    id: version
+    attributes: { label: Version, placeholder: 1.0.0 }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Reproduction steps }
+    validations: { required: true }
+  - type: textarea
+    id: hardware
+    attributes: { label: Windows, NVIDIA GPU, VRAM, and driver }
+    validations: { required: true }

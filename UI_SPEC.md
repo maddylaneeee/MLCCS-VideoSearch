@@ -1,31 +1,28 @@
-# UI specification
+# v1.0.0 UI specification
 
-The UI is native WinUI 3 on Windows App SDK 2.3.1 and follows Windows 10/11 interaction patterns. It uses a standard title bar, Mica where supported, NavigationView, CommandBar, InfoBar, ContentDialog, ListView/GridView, Expander, Tooltip and TeachingTip. macOS logic influences only shallow navigation, stable commands and progressive disclosure; there are no macOS window buttons, menu styling, gestures or shortcuts.
+The product uses native WinUI 3 controls and Windows interaction patterns. Every visible control invokes a production behavior; v1 contains no placeholders, experimental switches, diagnostics upload, telemetry, image indexing, or CPU/non-NVIDIA fallback.
 
-## Top-level pages
+## Pages
 
-- Search: persistent AutoSuggestBox, clear/query icon, source selector, recent searches, filters, sort, timing/result count and result explanations.
-- Library: grid/compact list toggle, add/rescan commands, concise cards, right-click actions and a detailed in-app panel.
-- Index jobs: total percent, stage, file, completed/failed counts, throughput, ETA, pause/resume/cancel and failure confirmation.
-- Settings: General/Startup, Libraries, Index content, Models/Quality, Performance/Background, Storage/Cache, Search/Phonetic, Privacy, Update, Diagnostics and About.
+- **Search:** query, source, library, extension, duration, modified-date and index-status filters; relevance/recent-modified/filename sort; persistent result/list-grid state; RRF source explanation and timestamp; player/context actions.
+- **Library:** video-only grid/list, add/rescan/remove, status, details, default-open, containing-folder and path copy.
+- **Index jobs:** stage, file, completed/failed count, progress, segment count, pause/resume/cancel and actionable file-level failures.
+- **Settings:** startup, libraries, optional speech/OCR, search-model idle timeout (5/10/30 minutes, default 10), storage, update controls, local logs and About.
 
-Navigation is never deeper than two levels. Cards show 16:9 thumbnail, at most two filename lines, duration, format and status badge; path/codec/resolution remain in details. Single click previews/details, double click or explicit command opens the system default application. Context menu: details, default open, containing folder, reindex, exclude and copy path.
+Navigation is at most two levels deep. Cards show a 16:9 thumbnail, two-line filename, duration, format and status; detailed paths/codecs remain in the details surface.
 
-## First run
+## First run and hardware gate
 
-The fixed sequence is privacy → hardware → data/model locations → libraries → index content → model recommendation → verified downloads → initial-index summary. “Help MLCCS improve” defaults on for anonymous low-frequency events. Full-log consent always defaults false and is never persisted as a blanket consent.
+The first run explains local-only data handling, reports detected Windows build, NVIDIA GPU, VRAM, driver and CUDA result, then configures locations, video libraries and optional speech/OCR. OpenCLIP Standard and BGE Small are required. If Windows 10 build 17763+, x64, NVIDIA GPU, 4 GB VRAM or bundled PyTorch CUDA availability is missing, Index and Search remain blocked with concrete remediation; Library and Settings remain accessible. A system CUDA Toolkit is not required.
 
-Hardware language is “节省资源 / 推荐 / 更高质量”. Technical model names, quantization and batch size are under Advanced. No-CUDA speech is disabled with a reason. Over-VRAM Whisper selection on CUDA requires a ContentDialog describing OOM, system lag and task-failure risk.
+Feedback configuration, indexes and model caches require explicit reset confirmation. Source media is never deleted.
 
-Download UI reports total/current file, real bytes, total bytes, speed, ETA, retry and mirror; supports pause/resume/cancel. Index summary warns that work can take hours/days and survives window close.
+## Search memory and updates
 
-## Player
+Agent status exposes search Worker PID/state/last use/idle time and Qdrant state. When the idle timeout expires with no active query, the whole Worker exits; a later query transparently restarts it. Update UI supports automatic-check opt-out, Check now, Update now, Later and Skip this version, with download/application progress. No update silently installs or restarts the app.
 
-The packaged libVLC backend supports accurate seek, surrounding context, highlighted hit, transcript/subtitles, volume, speed and full screen. Decode failure offers system-default open and does not mutate index state.
+## Player, accessibility and keyboard
 
-## Accessibility and keyboard
+The packaged player seeks to the hit and provides context, volume, speed and fullscreen; decode failure offers default-system open without altering the index. Core flows are keyboard complete with logical focus and programmatic names. Validate Ctrl+L/F, Ctrl+, Ctrl+O, Ctrl+Shift+O, Space, arrows and Esc where applicable.
 
-All controls have programmatic names; status, progress and error summaries use live regions where appropriate. Core flow is keyboard-complete with logical focus order. Suggested accelerators: Ctrl+L/F focus search, Ctrl+, settings, Ctrl+O default open, Ctrl+Shift+O containing folder, Space play/pause, arrows seek, Esc close panel. Never rely on hover alone.
-
-Validate at 100/150/200%, narrow/maximized windows and high contrast. Text must wrap or scroll without overlap/truncation. Narrator must announce labels, selected source, task stage/percent and remediation.
-
+The frozen candidate must be manually checked at 100/150/200% scaling, narrow/maximized windows and high contrast. Text wraps or scrolls without overlap; status/errors expose labels and remediation; critical actions never depend on hover.

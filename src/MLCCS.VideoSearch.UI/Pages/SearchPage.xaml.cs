@@ -70,6 +70,17 @@ public sealed partial class SearchPage : Page
         try
         {
             var status = await AgentClient.RequestAsync("agent.status");
+            if (status.TryGetProperty("hardware", out var hardware) && hardware.ValueKind == JsonValueKind.Object &&
+                hardware.TryGetProperty("supported", out var supported) && !supported.GetBoolean())
+            {
+                QueryBox.IsEnabled = false;
+                var issues = hardware.TryGetProperty("support_issues", out var issueNode)
+                    ? string.Join("；", issueNode.EnumerateArray().Select(item => item.GetString()))
+                    : "硬件检测未通过";
+                SetStatus("此电脑不支持索引和搜索", issues + "。请更新 NVIDIA 驱动；无需安装 CUDA Toolkit。",
+                    InfoBarSeverity.Error, remember: false);
+                return;
+            }
             var configured = status.GetProperty("configured").GetBoolean();
             if (!configured)
             {
@@ -85,7 +96,7 @@ public sealed partial class SearchPage : Page
                 var stage = worker.TryGetProperty("status", out var stageValue) ? stageValue.GetString() : "";
                 var progress = worker.TryGetProperty("progress", out var progressValue)
                     ? progressValue.GetDouble() : 0;
-                var frames = worker.TryGetProperty("framesIndexed", out var framesValue)
+                var frames = worker.TryGetProperty("segmentsIndexed", out var framesValue)
                     ? framesValue.GetInt64() : 0;
                 // Existing filename/visual records remain queryable while an incremental run is active.
                 ready = stage == "Completed" || frames > 0 || File.Exists(AppPaths.Database);
@@ -128,6 +139,11 @@ public sealed partial class SearchPage : Page
         SearchSessionState.Query = query;
         SearchSessionState.Source = (SourceSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "all";
         SearchSessionState.Library = (LibrarySelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+        SearchSessionState.Extension = (ExtensionSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+        SearchSessionState.Duration = (DurationSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "any";
+        SearchSessionState.ModifiedDays = (DateSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "any";
+        SearchSessionState.IndexStatus = (StatusSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+        SearchSessionState.Sort = (SortSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "relevance";
         SearchSessionState.HasCompletedSearch = false;
         QueryBox.IsEnabled = false;
         SetStatus("正在搜索", "首次查询会加载锁定模型，后续查询会复用常驻 Worker。",
@@ -137,8 +153,25 @@ public sealed partial class SearchPage : Page
         {
             var source = SearchSessionState.Source;
             var library = SearchSessionState.Library;
+            long? durationMinMs = SearchSessionState.Duration == "long" ? 600_000 :
+                SearchSessionState.Duration == "medium" ? 60_000 : null;
+            long? durationMaxMs = SearchSessionState.Duration == "short" ? 60_000 :
+                SearchSessionState.Duration == "medium" ? 600_000 : null;
+            string? modifiedFromUtc = int.TryParse(SearchSessionState.ModifiedDays, out var days)
+                ? DateTimeOffset.UtcNow.AddDays(-days).ToString("O") : null;
             var response = await AgentClient.RequestAsync("search.query",
-                new { query, source, library, limit = 60 });
+                new
+                {
+                    query, source, limit = 60,
+                    filters = new
+                    {
+                        libraries = string.IsNullOrEmpty(library) ? Array.Empty<string>() : new[] { library },
+                        extensions = string.IsNullOrEmpty(SearchSessionState.Extension) ? Array.Empty<string>() : new[] { SearchSessionState.Extension },
+                        durationMinMs, durationMaxMs, modifiedFromUtc,
+                        statuses = string.IsNullOrEmpty(SearchSessionState.IndexStatus) ? Array.Empty<string>() : new[] { SearchSessionState.IndexStatus }
+                    },
+                    sort = SearchSessionState.Sort
+                });
             foreach (var result in response.GetProperty("results").EnumerateArray())
             {
                 Results.Add(new SearchResultViewModel
@@ -214,9 +247,21 @@ public sealed partial class SearchPage : Page
                 break;
             }
         }
+        RestoreSelector(ExtensionSelector, SearchSessionState.Extension);
+        RestoreSelector(DurationSelector, SearchSessionState.Duration);
+        RestoreSelector(DateSelector, SearchSessionState.ModifiedDays);
+        RestoreSelector(StatusSelector, SearchSessionState.IndexStatus);
+        RestoreSelector(SortSelector, SearchSessionState.Sort);
         if (SearchSessionState.GridMode) ResultGrid_Click(this, new RoutedEventArgs());
         else ResultList_Click(this, new RoutedEventArgs());
         if (SearchSessionState.HasCompletedSearch) ApplySavedStatus();
+    }
+
+    private static void RestoreSelector(ComboBox selector, string tag)
+    {
+        selector.SelectedItem = selector.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            ?? selector.Items[0];
     }
 
     private void ApplySavedStatus()

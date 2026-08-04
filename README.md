@@ -1,131 +1,65 @@
-<p align="right"><strong>简体中文</strong> · <a href="README_EN.md">English</a></p>
-
 # MLCCS Video Search
 
-<p align="center">
-  <img src="assets/MLCCS.VideoSearch.png" alt="MLCCS Video Search 图标" width="160">
-</p>
+MLCCS Video Search `v1.0.0` 是一款仅在本机运行的 Windows 视频语义搜索应用。它可以按文件名、视频画面、语音和画面文字查找视频，并从命中时间点直接播放。
 
-<p align="center">
-  面向 Windows 10/11 的本地视频语义检索工具。<br>
-  使用文件名、画面、语音与 OCR 字幕查找视频片段，索引和检索数据默认保留在本机。
-</p>
+[English README](README_EN.md)
 
-<p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.3.0--feedback5-2563eb">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078d4">
-  <img alt="UI" src="https://img.shields.io/badge/UI-WinUI%203-0ea5e9">
-  <img alt="Runtime" src="https://img.shields.io/badge/runtime-private%20%26%20local-16a34a">
-</p>
+## 系统要求
 
-> [!WARNING]
-> 本项目仍在持续开发和优化阶段。当前版本可能仍然存在稳定性、兼容性和功能性问题，不建议将其视为关键数据工作流中的成熟产品。欢迎通过 GitHub Issues 指出问题、提出修改意见或分享改进建议。
+- Windows 10 1809（build 17763）或更高版本，或 Windows 11，x64。
+- NVIDIA GPU，至少 4 GB 显存。
+- NVIDIA 驱动必须能让随应用提供的 `PyTorch 2.7.1+cu128` 报告 CUDA 可用。
+- 不需要另行安装 CUDA Toolkit；兼容的 NVIDIA 驱动是必要条件。
 
-## 演示视频
+安装器允许在硬件暂不合格时完成安装，便于先更新驱动。首次运行会显示检测到的 Windows、GPU、显存、驱动和 CUDA 状态；未达标时会硬性阻止索引和搜索，但资源库浏览、设置、日志和更新仍可使用。v1.0.0 不支持 CPU、AMD、Intel GPU 或少于 4 GB 显存的搜索/索引回退。
 
-[▶ 播放或下载样本演示视频（MP4，约 33.5 MiB）](samples/mlccs-video-search-demo.mp4)
+## 下载与安装
 
-该视频来自项目最终 Windows 验收阶段的实际操作录屏，已随仓库保存，便于直接了解索引、资源库和搜索体验。
+正式版在线安装器：
 
-## 功能
+[下载 MLCCS Video Search v1.0.0](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/MLCCS-VideoSearch-Online-Setup-1.0.0.exe)
 
-- 本地视频资源库：支持多个本地盘或网络盘文件夹，并可按资源文件夹精确筛选。
-- 多模态搜索：组合文件名、画面语义、语音转写、OCR 字幕和拼音召回。
-- 高性能索引：定位采样、多视频并行、CUDA 自适应批处理与显存不足自动降批。
-- 流式界面：资源库网格和列表按可见区域生成预览，避免一次性解码全部缩略图。
-- 可恢复后台任务：Agent 持久化队列、断点和失败状态，关闭 UI 不会丢失索引进度。
-- 本地优先隐私：媒体、查询、转写和向量不上传；诊断包只有在用户明确确认后才会提交。
-- 可验证分发：在线安装器校验每个组件的大小与 SHA-256，支持断点续传、暂停、取消和卸载。
+首次安装的必选内容包含应用核心、私有 Python/PyTorch CUDA 运行时、Qdrant Server v1.18.3、OpenCLIP Standard 和 BGE Small。安装器从签名 Manifest 读取并显示精确下载量，支持断点续传；Whisper 按需下载，OCR 可在安装器或应用内选装。最终发布清单中的精确字节数会同步记录在 Release Notes 和 `SHA256SUMS`。
 
-## 安装
-
-当前公开测试版本为 `0.3.0-feedback5`：
-
-[下载 Windows 在线安装器](https://lixinchen.ca/docs/mlccs-video-search/0.3.0-feedback5/MLCCS-VideoSearch-Online-Setup.exe)
-
-- 支持：Windows 10/11 x64。
-- 安装器大小：`143,943,908` 字节。
-- 安装器 SHA-256：`8350e9e39062f88ffda1f46def307300575f84c76eea2284829f311ed5e89962`。
-- 首次安装按选择下载应用核心、私有运行时、视觉模型及可选 OCR 模型。
-- 语音索引需要兼容的 NVIDIA GPU 与 CUDA 运行能力；系统无需预装 Python、FFmpeg 或 .NET SDK。
-
-完整发布记录和组件哈希见 [publication/publication-record.json](publication/publication-record.json)。
-
-## 验收结果
-
-`0.3.0-feedback5` 已在真实 Windows 环境完成构建、启动、IPC、资源文件夹筛选、网络盘索引、断点恢复及在线安装器弱网测试：
-
-- Windows 全量构建：0 警告、0 错误。
-- C# Core：10/10 测试通过。
-- Python Worker、协议和 Schema：10/10 测试通过。
-- 六个 10 分钟视频的同粒度 CUDA 基准从 `9.478 fps` 提升到 `26.392 fps`。
-- 真实网络资源库长跑阶段吞吐达到 `20.28 fps`，修正版重启后从 `72.7%` 继续索引。
-- 在线安装器通过断流恢复、跨进程断点续传、暂停零增长、无 Range 回退及最终哈希校验。
-
-详细证据见 [FEEDBACK5_ACCEPTANCE.md](FEEDBACK5_ACCEPTANCE.md) 和 [Windows 验收报告](evidence/windows-acceptance/WINDOWS_ACCEPTANCE_REPORT.md)。
-
-## 架构
-
-```mermaid
-flowchart LR
-  UI["WinUI 3 UI"] <-->|"用户级命名管道"| Agent["索引 Agent + 托盘"]
-  Agent <-->|"用户级命名管道"| Worker["私有 Python ML Worker"]
-  Agent --> SQLite[("SQLite + FTS5")]
-  Worker --> Qdrant[("Qdrant Edge")]
-  Worker --> Models["本地模型"]
-  Updater["签名更新器"] --> UI
-  Updater --> Agent
-```
-
-- UI 负责交互，不持有长时间索引任务。
-- Agent 管理资源发现、持久队列、断点和进程生命周期。
-- Worker 负责 FFmpeg 探测、画面/语音/OCR 推理与本地向量检索。
-- SQLite 是权威元数据存储，Qdrant 集合可由确定性片段记录重建。
-
-设计细节见 [ARCHITECTURE.md](ARCHITECTURE.md)。
-
-## 从源码构建
-
-开发和发布构建需要 Windows 10/11 x64。仓库包含锁定的 .NET、Python 依赖和模型清单：
+本项目不使用 Windows Authenticode。Windows SmartScreen 可能显示“未知发布者”。请只从上述正式地址或 GitHub Release 下载，并在 PowerShell 中核对 SHA-256：
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-& .\scripts\Bootstrap-Windows.ps1
-& .\scripts\Build-PrivateRuntime.ps1
-& .\scripts\Build-Windows.ps1 -Configuration Release
+Get-FileHash .\MLCCS-VideoSearch-Online-Setup-1.0.0.exe -Algorithm SHA256
 ```
 
-详细步骤：
+将结果与 Release 中的 `SHA256SUMS` 对照后再运行安装器。
 
-- [BUILD_WINDOWS.md](BUILD_WINDOWS.md)：工具链、私有运行时和整体编译门。
-- [PORTABLE_RELEASE.md](PORTABLE_RELEASE.md)：便携版生成与检查。
-- [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md)：模型来源、版本与许可证。
-- [WINDOWS_ACCEPTANCE.md](WINDOWS_ACCEPTANCE.md)：集中验收项目。
+## 已实现功能
 
-## 仓库结构
+- 约 2 FPS 的低分辨率场景分析，阈值 27，场景窗口限制在 2–8 秒；高运动窗口保存额外代表帧。
+- OpenCLIP Standard 视觉向量、BGE Small 中文文本向量和私有 Qdrant Server；SQLite 是路径、原文、FTS5 与 Outbox 的权威存储。
+- 文件名、语音原文、OCR 原文、拼音/音近 FTS；视觉、语音和 OCR 语义召回通过 RRF 融合，并保留来源、时间点和分数贡献。
+- 按资源库、格式、时长、修改日期、索引状态筛选，并按相关度、最近修改或文件名排序。
+- 列表/网格浏览、命中时间预览、播放器跳转、复制路径和打开所在文件夹。
+- 搜索模型空闲 5/10/30 分钟后终止整个 Worker；无索引或搜索任务时同时停止私有 Qdrant，下一次使用自动恢复。
+- 签名稳定通道检查、用户确认更新、断点下载、逐文件校验、`current/previous` 原子交换、健康检查和失败回滚。
+- 单个损坏或不支持的视频只标记文件级失败，不会使整个资源库任务失败。
 
-| 路径 | 内容 |
-|---|---|
-| `src/MLCCS.VideoSearch.UI` | WinUI 3 单实例桌面界面 |
-| `src/MLCCS.VideoSearch.Agent` | 后台索引队列与托盘宿主 |
-| `src/MLCCS.VideoSearch.Core` | 协议、存储、索引、搜索、隐私与更新逻辑 |
-| `src/MLCCS.VideoSearch.Updater` | 带健康检查和回滚的更新器 |
-| `worker` | 私有 Python ML Worker 及锁定清单 |
-| `installer` | Windows 在线安装器 |
-| `schemas` | 版本化 JSON 合约 |
-| `tests` | C#、Python、Schema 和安装器测试 |
-| `evidence` | Windows 验收记录、性能样本与截图 |
+## 数据与网络边界
 
-## 安全与隐私
+媒体文件、路径、查询、转写、OCR 原文、缩略图和向量保留在本机。Qdrant 只监听动态选择的 `127.0.0.1` 端口，其 Payload 只包含不透明 ID、时间和模型/算法版本。应用不提供诊断上传、自动遥测或“帮助改进”网络入口。
 
-- 进程间消息有固定协议版本和 1 MiB 帧大小限制。
-- 更新清单与更新包必须同时通过签名和哈希校验。
-- 长期状态变更使用 SQLite 事务或同卷原子替换。
-- 仓库不包含生产签名私钥、用户索引数据库、模型缓存或用户媒体库。
-- 样本录屏是为本项目公开发布而明确加入的演示资源。
+应用仅在以下明确行为中联网：下载已锁定组件/可选模型，以及启用自动检查或点击“立即检查更新”。关闭自动检查后不会主动访问更新通道。本地日志会脱敏，并可从设置页打开。
 
-## 许可证
+## 更新、重置与卸载
 
-本项目原创源码和项目文档采用 [MIT License](LICENSE)，Copyright © 2026 Matt。
+Feedback 版配置、索引和模型缓存不与 v1.0.0 复用。交互安装会先解释并要求确认；静默安装默认拒绝旧状态，只有显式重置参数才能继续。重置和卸载永远不会删除原始视频。
 
-第三方依赖、模型、工具和二进制继续遵循各自许可证，样本视频及验收截图不包含在 MIT 媒体再利用授权中。再分发前请查阅 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、锁定清单及 [MODELS_AND_LICENSES.md](MODELS_AND_LICENSES.md)。
+应用核心位于 `current`，上一个可回滚核心位于 `previous`；运行时、Qdrant 和模型按 SHA-256 放在不可变组件目录。更新不会静默安装或重启。卸载会删除程序目录和快捷方式，用户数据目录中的设置、索引和按需模型默认保留。
+
+## 开发与验证
+
+Windows 构建入口为：
+
+```powershell
+.\scripts\Build-Windows.ps1 -Configuration Release
+```
+
+发布门禁要求 Windows 零警告构建、全部自动测试通过、固定不少于 30 个查询的数据集达到 `Recall@10 ≥ 0.80` 和 `MRR ≥ 0.65`，再完成一次 NVIDIA/CUDA 端到端验收与一次纯人工 UI 验收。项目不进行 72 小时耐久验收。
+
+参见 [贡献指南](CONTRIBUTING.md)、[安全策略](SECURITY.md)、[支持说明](SUPPORT.md) 和 [第三方声明](THIRD_PARTY_NOTICES.md)。

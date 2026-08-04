@@ -17,7 +17,8 @@ internal static class AgentClient
             try
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeout.CancelAfter(TimeSpan.FromSeconds(kind is "search.query" or "storage.summary" ? 120 : 10));
+                timeout.CancelAfter(kind == "update.apply" ? TimeSpan.FromHours(24) :
+                    TimeSpan.FromSeconds(kind is "search.query" or "storage.summary" ? 120 : 10));
                 await using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut,
                     PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Identification);
                 await pipe.ConnectAsync(timeout.Token);
