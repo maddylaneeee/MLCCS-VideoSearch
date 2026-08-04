@@ -20,6 +20,7 @@ from mlccs_worker.batch_index import (_database, _record_file_failure, _remove_m
                                       _segment_sample_ranges, _speech_window_groups)
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
 from mlccs_worker.model_download import _atomic as atomic_model_status
+from mlccs_worker.vector_store import QdrantServer
 
 
 class WorkerTests(unittest.TestCase):
@@ -150,6 +151,25 @@ class WorkerTests(unittest.TestCase):
                              "speech_version", "ocr_version"} <= columns)
             connection.close()
 
+    def test_qdrant_delete_is_idempotent_when_collection_is_absent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            connection.execute("""INSERT INTO vector_outbox(
+                operation,collection,point_id,payload_json,created_utc)
+                VALUES('delete','visual_v1','gone','{}','now')""")
+            connection.commit()
+            qdrant = QdrantServer("http://127.0.0.1:1", "test-key")
+            try:
+                with patch.object(qdrant, "collection_exists", return_value=False), \
+                     patch.object(qdrant, "_request") as request:
+                    self.assertEqual(1, qdrant.apply_outbox(connection))
+                    request.assert_not_called()
+                self.assertIsNotNone(connection.execute(
+                    "SELECT completed_utc FROM vector_outbox").fetchone()[0])
+            finally:
+                qdrant.close()
+                connection.close()
+
     def test_chinese_phonetic_expansion_is_bounded_by_level(self):
         self.assertGreater(_phonetic_match("皇帝", "huangdi.mp4", "medium"), 0)
         self.assertEqual(0, _phonetic_match("皇帝", "完全无关.mp4", "low"))
@@ -192,6 +212,7 @@ class WorkerTests(unittest.TestCase):
                     self.assertEqual(["D:\\B\\相同名称.mp4"],
                                      list(dict.fromkeys(item["path"] for item in results)),
                                      source)
+                    self.assertIn(f"{source}-fts", results[0]["source"])
             finally:
                 engine.close()
 

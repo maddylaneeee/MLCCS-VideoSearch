@@ -190,12 +190,18 @@ class SearchEngine:
             columns.append("transcript")
         if source in ("all", "ocr"):
             columns.append("ocr")
-        expression = _fts_expression(query, columns)
-        if expression:
+        fts_sources = {
+            "filename": ("filename-fts", "SQLite FTS5 文件名匹配"),
+            "transcript": ("speech-fts", "SQLite FTS5 语音原文匹配"),
+            "ocr": ("ocr-fts", "SQLite FTS5 OCR 原文匹配"),
+        }
+        for column in columns:
+            expression = _fts_expression(query, [column])
             rows = connection.execute("""SELECT asset_id,bm25(search_fts,0,3,1.5,1,0.8,0.6,0.2) AS score
                 FROM search_fts WHERE search_fts MATCH ? ORDER BY score LIMIT ?""", (expression, limit * 5)).fetchall()
+            source_name, explanation = fts_sources[column]
             for rank, row in enumerate((row for row in rows if row["asset_id"] in allowed_set), 1):
-                contribute(row["asset_id"], 0, "fts", rank, "SQLite FTS5 文字匹配", -float(row["score"]))
+                contribute(row["asset_id"], 0, source_name, rank, explanation, -float(row["score"]))
 
         if phonetic_level != "off" and source in ("all", "filename", "speech", "ocr"):
             candidates = connection.execute("SELECT asset_id,filename||' '||transcript||' '||ocr FROM search_fts").fetchall()

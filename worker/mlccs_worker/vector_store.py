@@ -90,8 +90,12 @@ class QdrantServer:
                     "points": [{"id": point_id, "vector": vector, "payload": payload}]
                 })
             elif operation == "delete":
-                self._request("POST", f"/collections/{collection}/points/delete?wait=true",
-                              {"points": [point_id]})
+                # Deleting from an absent collection is already satisfied. This matters
+                # during deterministic rebuilds where a library may have no remaining
+                # points for a formerly used collection.
+                if self.collection_exists(collection):
+                    self._request("POST", f"/collections/{collection}/points/delete?wait=true",
+                                  {"points": [point_id]})
             else:
                 raise RuntimeError("Unknown vector outbox operation")
             connection.execute(
