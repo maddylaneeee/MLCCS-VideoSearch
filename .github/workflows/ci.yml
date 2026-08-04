@@ -39,5 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --exclude-path docs/history --exclude-path retained README.md README_EN.md CHANGELOG.md SECURITY.md CONTRIBUTING.md SUPPORT.md
+          # The versioned installer URL is a post-acceptance deployment gate and is intentionally
+          # unavailable while this release PR is under review. All other public links are checked here.
+          args: --no-progress --exclude-path docs/history --exclude-path retained --exclude 'https://lixinchen.ca/docs/mlccs-video-search/1.0.0/MLCCS-VideoSearch-Online-Setup-1.0.0.exe' README.md README_EN.md CHANGELOG.md SECURITY.md CONTRIBUTING.md SUPPORT.md
           fail: true
