@@ -21,6 +21,8 @@ MLCCS Video Search `v1.0.0` 是一款仅在本机运行的 Windows 视频语义�
 
 首次安装的必选内容包含应用核心、私有 Python/PyTorch CUDA 运行时、Qdrant Server v1.18.3、OpenCLIP Standard 和 BGE Small，共 `5,458,820,128` 字节（约 `5.084 GiB`）。安装器从签名 Manifest 读取并显示精确下载量，支持断点续传；Whisper 按需下载，OCR 可在安装器或应用内选装，v1.0.0 的可选 OCR 包为 `18,631,826` 字节（约 `17.77 MiB`）。
 
+安装器按接近裸机的 Windows 10/11 环境设计，不要求预装 winget、.NET、Windows App Runtime、Python、CUDA Toolkit、浏览器或第三方包管理器。开始下载大型组件前，它会复检 Windows 版本/架构、Visual C++ x64 运行库、Media Foundation、DirectX/WinUI 所需系统 DLL 以及网络/加密基础组件；缺失项只从 Microsoft 官方入口或 Windows Update 下载，验证 Microsoft Authenticode，并在安装或 DISM/SFC 修复后再次检查。Windows N/KN 会补装 Media Feature Pack；需要重启时会保留下载并明确停止。应用所需的 .NET 10、Windows App SDK、Python/PyTorch CUDA 和 Qdrant 均随签名程序载荷提供。NVIDIA 驱动仍须按实际 GPU/OEM 安装，安装器不会猜测并下载不匹配的驱动。
+
 本项目不使用 Windows Authenticode。Windows SmartScreen 可能显示“未知发布者”。请只从上述正式地址或 GitHub Release 下载，并在 PowerShell 中核对 SHA-256：
 
 ```powershell

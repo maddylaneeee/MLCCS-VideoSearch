@@ -6,6 +6,8 @@ It supports Windows 10 1809+/Windows 11 x64 with an NVIDIA GPU, at least 4 GB VR
 
 Highlights include 2–8 second scene indexing, OpenCLIP/BGE multimodal recall, private Qdrant Server v1.18.3 with a SQLite Outbox, FTS5 and phonetic matching, RRF explanations, filters and sorting, timestamp playback, idle RAM/VRAM release, signed/resumable updates, health-checked atomic rollback, and file-scoped handling of corrupt media.
 
+The self-contained installer supports a nearly bare Windows 10/11 x64 environment. Before downloading the large signed payload, it checks and, when necessary, obtains the Microsoft Visual C++ x64 runtime, Windows N/KN Media Feature Pack, and missing Windows media/DirectX/WinUI/network/cryptography components from Microsoft or Windows Update. Microsoft executables are Authenticode-verified and all repairs are rechecked. .NET 10, Windows App SDK, Python/PyTorch CUDA, and Qdrant are bundled; no winget, browser, third-party package manager, or CUDA Toolkit is required.
+
 The release does not include image indexing, diagnostics upload, telemetry, experimental controls, CPU/AMD/Intel fallback, Windows Authenticode, or a 72-hour endurance claim.
 
 Because the installer is not Authenticode-signed, Windows SmartScreen may display an unknown-publisher warning. Verify `MLCCS-VideoSearch-Online-Setup-1.0.0.exe` with `Get-FileHash -Algorithm SHA256` and compare the result with the attached `SHA256SUMS`.

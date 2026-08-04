@@ -26,6 +26,18 @@ internal static class Program
         StartupDiagnostics.Initialize(args);
         try
         {
+            var prerequisiteReportArgument = args.FirstOrDefault(argument =>
+                argument.StartsWith("--prerequisite-report=", StringComparison.OrdinalIgnoreCase));
+            if (prerequisiteReportArgument is not null)
+            {
+                var outputPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(
+                    prerequisiteReportArgument[(prerequisiteReportArgument.IndexOf('=') + 1)..]));
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+                File.WriteAllText(outputPath, JsonSerializer.Serialize(
+                    SystemPrerequisites.Inspect(),
+                    new JsonSerializerOptions { WriteIndented = true }));
+                return;
+            }
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += (_, eventArgs) =>
             {
@@ -188,6 +200,7 @@ internal sealed class InstallerForm : Form
     private readonly TextBox _installPath = new();
     private readonly CheckedListBox _components = new();
     private readonly CheckBox _desktopShortcut = new();
+    private readonly Label _prerequisiteSummary = new();
     private readonly Label _downloadSummary = new();
     private readonly Label _status = new();
     private readonly ProgressBar _progress = new();
@@ -212,8 +225,8 @@ internal sealed class InstallerForm : Form
             Icon = Icon.ExtractAssociatedIcon(processPath);
         }
         Width = 720;
-        Height = 570;
-        MinimumSize = new Size(680, 540);
+        Height = 650;
+        MinimumSize = new Size(680, 620);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Segoe UI", 10);
         AutoScaleMode = AutoScaleMode.Dpi;
@@ -286,6 +299,12 @@ internal sealed class InstallerForm : Form
         _desktopShortcut.Dock = DockStyle.Top;
         _desktopShortcut.Padding = new Padding(0, 6, 0, 10);
 
+        _prerequisiteSummary.AutoSize = true;
+        _prerequisiteSummary.Dock = DockStyle.Top;
+        _prerequisiteSummary.ForeColor = SystemColors.GrayText;
+        _prerequisiteSummary.Padding = new Padding(0, 0, 0, 8);
+        RefreshPrerequisiteSummary();
+
         _status.Text = "正在读取安装清单…";
         _status.AutoEllipsis = true;
         _status.Dock = DockStyle.Top;
@@ -323,10 +342,11 @@ internal sealed class InstallerForm : Form
         var content = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            RowCount = 10,
+            RowCount = 11,
             ColumnCount = 1,
             Padding = new Padding(28)
         };
+        content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -345,6 +365,7 @@ internal sealed class InstallerForm : Form
         content.Controls.Add(_components);
         content.Controls.Add(_downloadSummary);
         content.Controls.Add(_desktopShortcut);
+        content.Controls.Add(_prerequisiteSummary);
         content.Controls.Add(_status);
         content.Controls.Add(_progress);
         Controls.Add(content);
@@ -398,6 +419,16 @@ internal sealed class InstallerForm : Form
             MessageBox.Show($"无法读取安装清单：\n{ex.Message}", "安装器",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void RefreshPrerequisiteSummary()
+    {
+        var report = SystemPrerequisites.Inspect();
+        _prerequisiteSummary.Text = report.HasRepairableIssues
+            ? "系统依赖：检测到缺失项；点击“安装”后将从 Microsoft/Windows Update 下载并补齐。"
+            : "系统依赖：已就绪（运行时与 Windows 媒体/核心组件已复检）。";
+        _prerequisiteSummary.ForeColor = report.HasRepairableIssues
+            ? Color.DarkGoldenrod : Color.DarkGreen;
     }
 
     internal static HttpClient CreateHttpClient()
@@ -545,6 +576,30 @@ internal sealed class InstallerForm : Form
         var downloadDirectory = GetDownloadCacheDirectory();
         try
         {
+            var prerequisites = SystemPrerequisites.Inspect();
+            if (!prerequisites.CanInstall)
+            {
+                throw new PlatformNotSupportedException(prerequisites.Describe());
+            }
+            if (prerequisites.HasRepairableIssues)
+            {
+                if (MessageBox.Show(
+                        "安装器检测到缺失或过旧的 Windows 基础依赖。\n\n" +
+                        prerequisites.Describe() +
+                        "\n\n继续后只会从 Microsoft 官方入口和 Windows Update 下载，并验证安装包签名。可能显示 UAC 提示，修复系统组件可能需要重启。是否继续？",
+                        "需要补齐系统依赖", MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Information) != DialogResult.Yes)
+                {
+                    return;
+                }
+                using var prerequisiteHttp = CreateHttpClient();
+                await SystemPrerequisites.EnsureAsync(
+                    prerequisiteHttp,
+                    Path.Combine(GetDownloadCacheDirectory(), "prerequisites"),
+                    message => _status.Text = message,
+                    cancellationToken);
+                RefreshPrerequisiteSummary();
+            }
             if (!FeedbackState.ResetIfNeeded(quiet: false, explicitReset: false)) return;
             Directory.CreateDirectory(installDirectory);
             Directory.CreateDirectory(downloadDirectory);
@@ -1133,13 +1188,19 @@ internal static class SilentInstaller
 {
     internal static async Task RunAsync(string[] args)
     {
+        using var http = InstallerForm.CreateHttpClient();
+        await SystemPrerequisites.EnsureAsync(
+            http,
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MLCCS", "VideoSearch", "Installer", "downloads", Program.Version, "prerequisites"),
+            StartupDiagnostics.Write,
+            CancellationToken.None);
         var reset = args.Any(item => item.Equals("--reset-feedback", StringComparison.OrdinalIgnoreCase));
         FeedbackState.ResetIfNeeded(quiet: true, explicitReset: reset);
         var installRootArgument = args.FirstOrDefault(item => item.StartsWith("--install-root=", StringComparison.OrdinalIgnoreCase));
         var installRoot = Path.GetFullPath(installRootArgument is null
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "MLCCS VideoSearch")
             : Environment.ExpandEnvironmentVariables(installRootArgument[(installRootArgument.IndexOf('=') + 1)..]));
-        using var http = InstallerForm.CreateHttpClient();
         var json = await http.GetStringAsync(Program.ManifestUrl);
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         var manifest = JsonSerializer.Deserialize<ReleaseManifest>(json, options)

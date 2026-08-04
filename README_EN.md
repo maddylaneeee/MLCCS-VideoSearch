@@ -19,6 +19,8 @@ Installation is allowed on an unsupported machine so the driver can be updated. 
 
 Required first-install components are the app core, private Python/PyTorch CUDA runtime, Qdrant Server v1.18.3, OpenCLIP Standard, and BGE Small: `5,458,820,128` bytes (about `5.084 GiB`) in total. The installer displays the exact signed download size and supports resume. Whisper is downloaded on demand; OCR is optional, and the v1.0.0 OCR package is `18,631,826` bytes (about `17.77 MiB`).
 
+The installer is designed for a nearly bare Windows 10/11 machine. It does not assume winget, .NET, Windows App Runtime, Python, the CUDA Toolkit, a browser, or a third-party package manager. Before large component downloads, it checks the Windows version/architecture, Visual C++ x64 runtime, Media Foundation, DirectX/WinUI system DLLs, and core networking/cryptography files. Missing items are obtained only from official Microsoft endpoints or Windows Update, the Microsoft Authenticode signature is verified, and every repair is rechecked. Windows N/KN receives the Media Feature Pack; a required restart stops setup clearly while preserving downloads. .NET 10, Windows App SDK, Python/PyTorch CUDA, and Qdrant ship in the signed payload. The NVIDIA driver still must match the actual GPU/OEM, so setup does not guess and download a potentially incompatible driver.
+
 The project does not use Windows Authenticode, so SmartScreen may show an unknown-publisher warning. Download only from the official link or GitHub Release and verify the installer:
 
 ```powershell

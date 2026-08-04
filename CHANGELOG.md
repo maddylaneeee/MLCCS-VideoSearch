@@ -7,6 +7,7 @@
 - Added NVIDIA/VRAM/CUDA hard gating and whole-process idle release for search models and Qdrant.
 - Added FTS5/Qdrant RRF search, source explanations, filters, sorting, and persistent in-session result presentation state.
 - Added one signed P-256/P1363 Manifest format shared by setup and updates, immutable components, atomic update/rollback, and resumable downloads.
+- Added a bare-Windows prerequisite gate that securely downloads or repairs missing Microsoft VC++ and Windows media/core components before payload installation.
 - Removed all v1 diagnostics-upload, telemetry, image-library, Beta, and unfinished UI surfaces.
 - Added release CI, CodeQL, Dependabot, repository governance, deterministic acceptance data, SBOM/license packaging, and bilingual release documentation.
 
