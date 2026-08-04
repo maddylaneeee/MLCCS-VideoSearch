@@ -15,10 +15,10 @@ Push-Location $projectRoot
 try {
   python scripts/validate_repository.py 2>&1 | Tee-Object -FilePath $log
   if ($LASTEXITCODE) { throw "Repository validation failed; see $log" }
-  python scripts/generate_release_metadata.py --output (Join-Path $artifactRoot 'release-metadata') 2>&1 | Tee-Object -FilePath $log -Append
-  if ($LASTEXITCODE) { throw "SBOM/license generation failed; see $log" }
   dotnet restore MLCCS.VideoSearch.sln -p:RestoreLockedMode=false -p:VersionPrefix=$version 2>&1 | Tee-Object -FilePath $log -Append
   if ($LASTEXITCODE) { throw "Restore failed; see $log" }
+  python scripts/generate_release_metadata.py --output (Join-Path $artifactRoot 'release-metadata') 2>&1 | Tee-Object -FilePath $log -Append
+  if ($LASTEXITCODE) { throw "SBOM/license generation failed; see $log" }
   dotnet build MLCCS.VideoSearch.sln -c $Configuration -p:EnableWindowsTargeting=true -p:VersionPrefix=$version --no-restore 2>&1 | Tee-Object -FilePath $log -Append
   if ($LASTEXITCODE) { throw "Build failed; see $log" }
   dotnet build tools/MLCCS.VideoSearch.SigningTool/MLCCS.VideoSearch.SigningTool.csproj -c $Configuration 2>&1 | Tee-Object -FilePath $log -Append

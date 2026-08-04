@@ -115,6 +115,10 @@ def main() -> int:
         inventory.append({"category": "nuget", "name": name, "version": package_version,
                           "license": license_value, "sha256": "resolved-by-signed-component-files", "source": source})
         components.append(component(name, package_version, "library", license_value, url=source))
+    required_nuget = {"Microsoft.WindowsAppSDK", "Microsoft.Data.Sqlite", "SQLitePCLRaw.bundle_e_sqlite3"}
+    missing_nuget = required_nuget - {name for name, _ in nuget}
+    if missing_nuget:
+        raise SystemExit("NuGet restore metadata is missing: " + ", ".join(sorted(missing_nuget)))
 
     unique = {item["bom-ref"]: item for item in components}
     sbom = {
