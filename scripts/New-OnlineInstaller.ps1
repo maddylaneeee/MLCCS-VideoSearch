@@ -29,32 +29,6 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
   [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
 }
 
-Add-Type -TypeDefinition @'
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-public sealed class ReleaseHash { public string Path { get; set; } public long Size { get; set; } public string Sha256 { get; set; } }
-public static class ReleaseHasher {
-  public static ReleaseHash[] Tree(string root) {
-    var prefix = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-    var values = new ConcurrentBag<ReleaseHash>();
-    Parallel.ForEach(Directory.EnumerateFiles(root,"*",SearchOption.AllDirectories), path => {
-      using (var stream = File.OpenRead(path)) {
-        using (var algorithm = SHA256.Create()) {
-          var digest = BitConverter.ToString(algorithm.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
-          values.Add(new ReleaseHash { Path=Path.GetFullPath(path).Substring(prefix.Length).Replace('\\','/'),
-            Size=stream.Length, Sha256=digest });
-        }
-      }
-    });
-    return values.OrderBy(item=>item.Path,StringComparer.Ordinal).ToArray();
-  }
-}
-'@
-
 function Copy-Tree([string]$Source,[string]$Destination,[string[]]$Exclude = @()) {
   New-Item -ItemType Directory -Force -Path $Destination | Out-Null
   $arguments = @($Source,$Destination,'/E','/R:2','/W:1','/NFL','/NDL','/NJH','/NJS')
@@ -66,8 +40,9 @@ function Copy-Tree([string]$Source,[string]$Destination,[string[]]$Exclude = @()
 function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$Scope,
   [bool]$Required,[bool]$DefaultSelected,[string]$Stage) {
   if (-not (Test-Path -LiteralPath $Stage)) { throw "Missing component stage: $Stage" }
-  $files = @([ReleaseHasher]::Tree($Stage) | ForEach-Object { [ordered]@{ path=$_.Path; size=$_.Size; sha256=$_.Sha256 } })
-  if (@($files).Count -eq 0) { throw "Empty component stage: $Stage" }
+  if (-not (Get-ChildItem -LiteralPath $Stage -File -Recurse | Select-Object -First 1)) {
+    throw "Empty component stage: $Stage"
+  }
   $archiveName = "$Id-$version.zip"
   $archivePath = Join-Path $packageRoot $archiveName
   & 7z a -tzip -mx=5 -mmt=on $archivePath (Join-Path $Stage '*') | Out-Host
@@ -76,7 +51,7 @@ function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$S
   [ordered]@{
     id=$Id; name=$Name; description=$Description; url="$PublicBaseUrl/$archiveName"; installScope=$Scope
     required=$Required; defaultSelected=$DefaultSelected; size=$archive.Length
-    sha256=(Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant(); files=$files
+    sha256=(Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant(); stage=$Stage
   }
 }
 
@@ -119,15 +94,18 @@ $components = @(
 )
 if ($OcrModelStage) { $components += New-Component 'ocr-models' 'PP-OCRv5 中文模型' '可选 OCR 模型' 'ocr-models' $false $false $OcrModelStage }
 
-$unsignedManifest = [ordered]@{
+$manifestDescriptor = [ordered]@{
   schemaVersion=1; productVersion=$version; minimumCompatibleVersion='1.0.0'
   requirements=[ordered]@{ minimumWindowsVersion='Windows 10 1809'; minimumWindowsBuild=17763; architecture='x64'; gpuVendor='NVIDIA'; minimumVramBytes=4294967296; cudaRuntime='PyTorch 2.7.1+cu128'; cudaToolkitRequired=$false }
   entryPoint='current/ui/MLCCS.VideoSearch.UI.exe'; publishedUtc=[DateTimeOffset]::UtcNow.ToString('O')
   releaseNotes=Get-Content -LiteralPath (Join-Path $projectRoot 'release-notes.md') -Raw
-  mandatory=$false; components=$components; keyId='manifest-v1'; manifestSignature=''
+  mandatory=$false; components=$components; keyId='manifest-v1'
 }
 $manifestPath = Join-Path $packageRoot 'release-manifest.unsigned.json'
-Write-Utf8NoBom $manifestPath ($unsignedManifest | ConvertTo-Json -Depth 12)
+$descriptorPath = Join-Path $outputFull 'manifest-descriptor.json'
+Write-Utf8NoBom $descriptorPath ($manifestDescriptor | ConvertTo-Json -Depth 5)
+python (Join-Path $projectRoot 'scripts/generate_unsigned_manifest.py') --descriptor $descriptorPath --output $manifestPath
+if ($LASTEXITCODE) { throw 'Unsigned manifest generation failed.' }
 
 $installerProject = Join-Path $projectRoot 'installer/MLCCS.VideoSearch.OnlineInstaller/MLCCS.VideoSearch.OnlineInstaller.csproj'
 $setupStage = Join-Path $outputFull 'setup'
