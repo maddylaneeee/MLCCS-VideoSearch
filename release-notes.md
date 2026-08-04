@@ -10,4 +10,4 @@ The release does not include image indexing, diagnostics upload, telemetry, expe
 
 Because the installer is not Authenticode-signed, Windows SmartScreen may display an unknown-publisher warning. Verify `MLCCS-VideoSearch-Online-Setup-1.0.0.exe` with `Get-FileHash -Algorithm SHA256` and compare the result with the attached `SHA256SUMS`.
 
-Required first-install bytes and final hashes will be copied from the frozen signed Release Manifest before publication. Optional Whisper models download on demand; OCR models are selectable.
+Required first-install components total exactly `5,458,820,128` bytes (about `5.084 GiB`). Optional Whisper models download on demand; the selectable v1.0.0 OCR package is `18,631,826` bytes (about `17.77 MiB`). Final artifact hashes are published in the signed Release Manifest and `SHA256SUMS`.

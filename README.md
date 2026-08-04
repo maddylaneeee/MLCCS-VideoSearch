@@ -19,7 +19,7 @@ MLCCS Video Search `v1.0.0` 是一款仅在本机运行的 Windows 视频语义�
 
 [下载 MLCCS Video Search v1.0.0](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/MLCCS-VideoSearch-Online-Setup-1.0.0.exe)
 
-首次安装的必选内容包含应用核心、私有 Python/PyTorch CUDA 运行时、Qdrant Server v1.18.3、OpenCLIP Standard 和 BGE Small。安装器从签名 Manifest 读取并显示精确下载量，支持断点续传；Whisper 按需下载，OCR 可在安装器或应用内选装。最终发布清单中的精确字节数会同步记录在 Release Notes 和 `SHA256SUMS`。
+首次安装的必选内容包含应用核心、私有 Python/PyTorch CUDA 运行时、Qdrant Server v1.18.3、OpenCLIP Standard 和 BGE Small，共 `5,458,820,128` 字节（约 `5.084 GiB`）。安装器从签名 Manifest 读取并显示精确下载量，支持断点续传；Whisper 按需下载，OCR 可在安装器或应用内选装，v1.0.0 的可选 OCR 包为 `18,631,826` 字节（约 `17.77 MiB`）。
 
 本项目不使用 Windows Authenticode。Windows SmartScreen 可能显示“未知发布者”。请只从上述正式地址或 GitHub Release 下载，并在 PowerShell 中核对 SHA-256：
 

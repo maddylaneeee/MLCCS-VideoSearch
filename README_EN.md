@@ -17,7 +17,7 @@ Installation is allowed on an unsupported machine so the driver can be updated. 
 
 [Download MLCCS Video Search v1.0.0](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/MLCCS-VideoSearch-Online-Setup-1.0.0.exe)
 
-Required first-install components are the app core, private Python/PyTorch CUDA runtime, Qdrant Server v1.18.3, OpenCLIP Standard, and BGE Small. The installer displays the exact signed download size and supports resume. Whisper is downloaded on demand; OCR is optional. Exact final byte counts are recorded in the Release Notes and `SHA256SUMS`.
+Required first-install components are the app core, private Python/PyTorch CUDA runtime, Qdrant Server v1.18.3, OpenCLIP Standard, and BGE Small: `5,458,820,128` bytes (about `5.084 GiB`) in total. The installer displays the exact signed download size and supports resume. Whisper is downloaded on demand; OCR is optional, and the v1.0.0 OCR package is `18,631,826` bytes (about `17.77 MiB`).
 
 The project does not use Windows Authenticode, so SmartScreen may show an unknown-publisher warning. Download only from the official link or GitHub Release and verify the installer:
 
