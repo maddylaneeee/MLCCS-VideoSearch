@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "worker"))
 
 from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_speech, require_v1_hardware
 from mlccs_worker.contracts import WorkerError
-from mlccs_worker.batch_index import _database, _remove_missing_assets, _segment_sample_ranges, _speech_window_groups
+from mlccs_worker.batch_index import (_database, _record_file_failure, _remove_missing_assets,
+                                      _segment_sample_ranges, _speech_window_groups)
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
 from mlccs_worker.model_download import _atomic as atomic_model_status
 
@@ -102,6 +103,24 @@ class WorkerTests(unittest.TestCase):
                                  "speech_windows", "ocr_observations", "vector_outbox", "search_fts"} <= tables)
                 self.assertFalse({"real_visual_frames", "transcript_segments_live",
                                   "ocr_observations_live"} & tables)
+            finally:
+                connection.close()
+
+    def test_corrupt_video_is_persisted_as_a_file_level_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            video = root / "损坏视频.mp4"
+            video.write_bytes(b"not-a-video")
+            connection = _database(root / "catalog.db")
+            try:
+                connection.execute("INSERT INTO libraries VALUES(?,?,?,?,?)",
+                                   ("library", "test", str(root), 1, "2026-08-04T00:00:00Z"))
+                _record_file_failure(connection, "library", str(root), video, "asset",
+                                     RuntimeError("decode failed"))
+                self.assertEqual(("Failed", "decode failed", 0), connection.execute(
+                    "SELECT status,error,duration_ms FROM media_assets WHERE asset_id='asset'").fetchone())
+                self.assertEqual("MEDIA_DECODE_FAILED", connection.execute(
+                    "SELECT error_code FROM assets WHERE id='asset'").fetchone()[0])
             finally:
                 connection.close()
 

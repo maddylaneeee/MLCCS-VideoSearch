@@ -233,6 +233,34 @@ def _refresh_fts(connection: sqlite3.Connection, asset_id: str, filename: str) -
                        (asset_id, filename, transcripts, ocr, pinyin, initials, ""))
 
 
+def _record_file_failure(connection: sqlite3.Connection, library_id: str, library_root: str,
+                         path: Path, asset_id: str, error: Exception) -> None:
+    """Persist a discoverable file-level failure even when media probing never completed."""
+    try:
+        stat = path.stat()
+        size = stat.st_size
+        modified = datetime.fromtimestamp(stat.st_mtime, UTC).isoformat()
+        fingerprint = hashlib.sha256(f"{stat.st_size}|{stat.st_mtime_ns}|{path.name}".encode()).hexdigest()
+    except OSError:
+        size = 0
+        modified = _utc()
+        fingerprint = hashlib.sha256(str(path).encode()).hexdigest()
+    message = str(error)[:500]
+    connection.execute("""INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET size_bytes=excluded.size_bytes,modified_utc=excluded.modified_utc,
+        fast_fingerprint=excluded.fast_fingerprint,status='Failed',error_code='MEDIA_DECODE_FAILED'""",
+        (asset_id, library_id, str(path), size, modified, fingerprint, None, "video",
+         None, None, None, None, None, "Failed", "MEDIA_DECODE_FAILED"))
+    connection.execute("""INSERT INTO media_assets VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(media_path) DO UPDATE SET asset_id=excluded.asset_id,library_root=excluded.library_root,
+        name=excluded.name,extension=excluded.extension,size_bytes=excluded.size_bytes,
+        modified_utc=excluded.modified_utc,status='Failed',error=excluded.error""",
+        (str(path), asset_id, library_root, path.name, path.suffix.casefold(), size, modified,
+         0, None, None, None, "Failed", None, message, _utc(), None, None, None))
+    connection.execute("DELETE FROM search_fts WHERE asset_id=?", (asset_id,))
+    connection.commit()
+
+
 def _speech_window_groups(rows: list[tuple[str, int, int, str]]) -> list[tuple[int, int, list[tuple[str, int, int, str]]]]:
     """Group transcript segments into deterministic 8–30 second semantic windows."""
     groups: list[list[tuple[str, int, int, str]]] = []
@@ -412,9 +440,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                 completed += 1
             except Exception as error:
                 failures.append(f"{path.name}: {error}")
-                connection.execute("UPDATE assets SET status='Failed',error_code='MEDIA_DECODE_FAILED' WHERE id=?", (asset_id,))
-                connection.execute("UPDATE media_assets SET status='Failed',error=? WHERE asset_id=?", (str(error)[:500], asset_id))
-                connection.commit()
+                _record_file_failure(connection, library_id, str(library), path, asset_id, error)
         del model
         torch.cuda.empty_cache()
 
