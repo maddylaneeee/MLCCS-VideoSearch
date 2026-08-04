@@ -64,7 +64,7 @@ try {
     'publish','installer/MLCCS.VideoSearch.OnlineInstaller/MLCCS.VideoSearch.OnlineInstaller.csproj',
     '-c','Release','-r','win-x64','--self-contained','true','-p:VersionPrefix=1.0.0',
     '-p:PublishSingleFile=true','-p:IncludeNativeLibrariesForSelfExtract=true',
-    '-p:EnableCompressionInSingleFile=false','-o',$setupRoot)
+    '-p:EnableCompressionInSingleFile=false','-p:UseSharedCompilation=false','-o',$setupRoot)
   $setup = Join-Path $setupRoot 'MLCCS-VideoSearch-Online-Setup.exe'
   if (-not (Test-Path -LiteralPath $setup)) { throw "Published setup is missing: $setup" }
 

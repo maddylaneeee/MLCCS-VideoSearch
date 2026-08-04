@@ -18,10 +18,10 @@ internal sealed record PrerequisiteReport(
     string WindowsName,
     IReadOnlyList<string> MissingFiles)
 {
-    internal bool HasRepairableIssues =>
+    public bool HasRepairableIssues =>
         !VisualCppRuntimeReady || !MediaFoundationReady || !WindowsCoreReady;
 
-    internal bool CanInstall => SupportedWindows && SupportedArchitecture;
+    public bool CanInstall => SupportedWindows && SupportedArchitecture;
 
     internal string Describe()
     {
