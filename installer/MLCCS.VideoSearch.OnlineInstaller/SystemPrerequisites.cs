@@ -199,23 +199,25 @@ internal static class SystemPrerequisites
             throw new InvalidDataException("依赖安装包大小超过安全上限。");
         }
 
-        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var output = new FileStream(partialPath, FileMode.Create, FileAccess.Write,
-            FileShare.None, 256 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        var buffer = new byte[256 * 1024];
-        long downloaded = 0;
-        int read;
-        while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
         {
-            downloaded += read;
-            if (downloaded > maximumBytes)
+            await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var output = new FileStream(partialPath, FileMode.Create, FileAccess.Write,
+                FileShare.None, 256 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var buffer = new byte[256 * 1024];
+            long downloaded = 0;
+            int read;
+            while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
             {
-                throw new InvalidDataException("依赖安装包大小超过安全上限。");
+                downloaded += read;
+                if (downloaded > maximumBytes)
+                {
+                    throw new InvalidDataException("依赖安装包大小超过安全上限。");
+                }
+                await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                progress($"正在下载 Visual C++ x64 运行库：{downloaded / 1024d / 1024d:0.0} MB");
             }
-            await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-            progress($"正在下载 Visual C++ x64 运行库：{downloaded / 1024d / 1024d:0.0} MB");
+            await output.FlushAsync(cancellationToken);
         }
-        await output.FlushAsync(cancellationToken);
         File.Move(partialPath, outputPath, overwrite: true);
     }
 
