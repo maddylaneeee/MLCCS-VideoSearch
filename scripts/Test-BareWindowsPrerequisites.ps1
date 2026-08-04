@@ -46,6 +46,7 @@ try {
   Invoke-Native 'restore' $dotnet @('restore','MLCCS.VideoSearch.sln','-p:RestoreLockedMode=false','-p:VersionPrefix=1.0.0')
   Invoke-Native 'windows-build' $dotnet @('build','MLCCS.VideoSearch.sln','-c','Release','-p:EnableWindowsTargeting=true','-p:VersionPrefix=1.0.0','-p:UseSharedCompilation=false','--no-restore')
   Invoke-Native 'core-tests' $dotnet @('test','tests/MLCCS.VideoSearch.Core.Tests/MLCCS.VideoSearch.Core.Tests.csproj','-c','Release','--no-build')
+  Invoke-Native 'installer-acceptance-build' $dotnet @('build','tests/MLCCS.VideoSearch.Installer.Acceptance/MLCCS.VideoSearch.Installer.Acceptance.csproj','-c','Release','-p:EnableWindowsTargeting=true','-p:UseSharedCompilation=false')
   Invoke-Native 'installer-acceptance' $dotnet @('run','--project','tests/MLCCS.VideoSearch.Installer.Acceptance/MLCCS.VideoSearch.Installer.Acceptance.csproj','-c','Release','--no-build')
 
   if ($PythonExe) {
