@@ -14,7 +14,14 @@ from .downloader import DownloadManager, load_manifest
 def _atomic(path: Path, value: dict[str, Any]) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
-    os.replace(temporary, path)
+    for attempt in range(30):
+        try:
+            os.replace(temporary, path)
+            return
+        except PermissionError:
+            if attempt == 29:
+                raise
+            time.sleep(0.1)
 
 
 def main() -> int:

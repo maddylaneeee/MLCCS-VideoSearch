@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
+import os
 import runpy
 import shutil
 import sys
@@ -16,9 +18,29 @@ from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_s
 from mlccs_worker.contracts import WorkerError
 from mlccs_worker.batch_index import _database, _remove_missing_assets, _segment_sample_ranges, _speech_window_groups
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
+from mlccs_worker.model_download import _atomic as atomic_model_status
 
 
 class WorkerTests(unittest.TestCase):
+    def test_model_status_atomic_write_retries_windows_reader_contention(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status = Path(directory) / "status.json"
+            real_replace = os.replace
+            attempts = 0
+
+            def replace_after_contention(source, destination):
+                nonlocal attempts
+                attempts += 1
+                if attempts < 3:
+                    raise PermissionError("simulated Windows reader contention")
+                real_replace(source, destination)
+
+            with patch("mlccs_worker.model_download.os.replace", side_effect=replace_after_contention), \
+                 patch("mlccs_worker.model_download.time.sleep"):
+                atomic_model_status(status, {"status": "Downloading"})
+            self.assertEqual(3, attempts)
+            self.assertEqual("Downloading", json.loads(status.read_text())["status"])
+
     def test_runtime_sitecustomize_finds_source_and_installed_worker_layouts(self):
         bootstrap = ROOT / "worker" / "runtime-sitecustomize.py"
         with tempfile.TemporaryDirectory() as directory:
