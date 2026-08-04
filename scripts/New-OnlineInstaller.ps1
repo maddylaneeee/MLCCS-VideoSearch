@@ -5,6 +5,7 @@ param(
   [Parameter(Mandatory)][string]$VisualModelStage,
   [Parameter(Mandatory)][string]$TextModelStage,
   [string]$OcrModelStage,
+  [string]$ReusePackageRoot,
   [string]$OutputRoot,
   [string]$PublicBaseUrl
 )
@@ -45,8 +46,25 @@ function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$S
   }
   $archiveName = "$Id-$version.zip"
   $archivePath = Join-Path $packageRoot $archiveName
-  & 7z a -tzip -mx=5 -mmt=on $archivePath (Join-Path $Stage '*') | Out-Host
-  if ($LASTEXITCODE) { throw "7z failed for $Id" }
+  $reusableIds = @('private-runtime','qdrant-server','visual-model','text-model')
+  $reusableArchive = if ($ReusePackageRoot -and $reusableIds -contains $Id) {
+    Join-Path $ReusePackageRoot $archiveName
+  } else { $null }
+  if ($reusableArchive -and (Test-Path -LiteralPath $reusableArchive)) {
+    if ((Get-Item -LiteralPath $reusableArchive).Length -le 0) { throw "Reusable archive is empty: $reusableArchive" }
+    Copy-Item -LiteralPath $reusableArchive -Destination $archivePath
+    Write-Host "Reused locked component archive: $archiveName"
+  } else {
+    $previousErrorPreference = $ErrorActionPreference
+    try {
+      # Windows PowerShell 5.1 wraps native stderr as NativeCommandError. 7-Zip
+      # can write harmless progress lines there, so trust its exit code instead.
+      $ErrorActionPreference = 'Continue'
+      & 7z a -tzip -mx=5 -mmt=on $archivePath (Join-Path $Stage '*') 2>&1 | Out-Host
+      $sevenZipExitCode = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousErrorPreference }
+    if ($sevenZipExitCode) { throw "7z failed for $Id with exit code $sevenZipExitCode" }
+  }
   $archive = Get-Item -LiteralPath $archivePath
   [ordered]@{
     id=$Id; name=$Name; description=$Description; url="$PublicBaseUrl/$archiveName"; installScope=$Scope
