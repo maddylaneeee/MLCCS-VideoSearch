@@ -58,7 +58,7 @@ public static class ReleaseHasher {
 function Copy-Tree([string]$Source,[string]$Destination,[string[]]$Exclude = @()) {
   New-Item -ItemType Directory -Force -Path $Destination | Out-Null
   $arguments = @($Source,$Destination,'/E','/R:2','/W:1','/NFL','/NDL','/NJH','/NJS')
-  if ($Exclude.Count) { $arguments += '/XD'; $arguments += $Exclude }
+  if (@($Exclude).Count -gt 0) { $arguments += '/XD'; $arguments += $Exclude }
   & robocopy @arguments | Out-Null
   if ($LASTEXITCODE -gt 7) { throw "robocopy failed: $Source" }
 }
@@ -67,7 +67,7 @@ function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$S
   [bool]$Required,[bool]$DefaultSelected,[string]$Stage) {
   if (-not (Test-Path -LiteralPath $Stage)) { throw "Missing component stage: $Stage" }
   $files = @([ReleaseHasher]::Tree($Stage) | ForEach-Object { [ordered]@{ path=$_.Path; size=$_.Size; sha256=$_.Sha256 } })
-  if (-not $files.Count) { throw "Empty component stage: $Stage" }
+  if (@($files).Count -eq 0) { throw "Empty component stage: $Stage" }
   $archiveName = "$Id-$version.zip"
   $archivePath = Join-Path $packageRoot $archiveName
   & 7z a -tzip -mx=5 -mmt=on $archivePath (Join-Path $Stage '*') | Out-Host
@@ -108,7 +108,7 @@ if ((Get-Item $qdrantArchive).Length -ne [long]$qdrantLock.size -or
 }
 $qdrantStage = Join-Path $stageRoot 'qdrant'
 Expand-Archive -LiteralPath $qdrantArchive -DestinationPath $qdrantStage
-if ((Get-ChildItem $qdrantStage -Filter qdrant.exe -Recurse).Count -ne 1) { throw 'Qdrant component must contain exactly one qdrant.exe.' }
+if (@(Get-ChildItem $qdrantStage -Filter qdrant.exe -Recurse).Count -ne 1) { throw 'Qdrant component must contain exactly one qdrant.exe.' }
 
 $components = @(
   (New-Component 'app-core' '应用核心' 'UI、Agent、Worker 与外置更新器' 'current' $true $true $coreStage),
