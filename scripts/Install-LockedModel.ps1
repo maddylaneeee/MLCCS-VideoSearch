@@ -9,21 +9,24 @@ $python = Join-Path $projectRoot 'worker/python/python.exe'
 $manifest = Join-Path $projectRoot 'worker/manifests/models.lock.json'
 if (-not (Test-Path $python)) { throw 'Private Python is missing.' }
 $env:PYTHONPATH = Join-Path $projectRoot 'worker'
-& $python -c @'
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(sys.argv[1]).resolve().parents[1]))
-from mlccs_worker.downloader import DownloadManager, load_manifest
-
-manifest, destination, prefix = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
-items = [item for item in load_manifest(manifest) if item.id.startswith(prefix)]
-if not items:
-    raise SystemExit(f"Unknown locked model prefix: {prefix}")
-manager = DownloadManager(destination)
-for item in items:
-    def progress(done, total, rate, item=item):
-        print(f"{item.id}: {done}/{total} bytes ({done/max(total,1):.1%}) {rate/1024/1024:.1f} MiB/s", flush=True)
-    path = manager.download(item, progress, lambda: False)
-    print(f"VERIFIED {item.id} -> {path}", flush=True)
-'@ $manifest $Destination $ModelPrefix
-if ($LASTEXITCODE) { throw "Locked model installation failed with exit code $LASTEXITCODE" }
+$status = "$Destination.download-status.json"
+$cancel = "$Destination.download-cancel"
+$stdout = "$Destination.download.stdout.log"
+$stderr = "$Destination.download.stderr.log"
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Destination) | Out-Null
+Remove-Item -LiteralPath $stdout,$stderr,$cancel -Force -ErrorAction SilentlyContinue
+$previousPreference = $ErrorActionPreference
+try {
+  $ErrorActionPreference = 'Continue'
+  & $python -m mlccs_worker.model_download --manifest $manifest --destination $Destination `
+    --status $status --cancel $cancel --prefix $ModelPrefix 1> $stdout 2> $stderr
+  $exitCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $previousPreference
+}
+if (Test-Path -LiteralPath $stdout) { Get-Content -LiteralPath $stdout | Write-Output }
+if (Test-Path -LiteralPath $stderr) { Get-Content -LiteralPath $stderr | Write-Output }
+if ($exitCode) { throw "Locked model installation failed with exit code $exitCode; see $status" }
+$result = Get-Content -LiteralPath $status -Raw | ConvertFrom-Json
+if ($result.status -ne 'Completed') { throw "Locked model installation did not complete: $($result.status)" }
+Write-Host "VERIFIED $ModelPrefix -> $Destination"
