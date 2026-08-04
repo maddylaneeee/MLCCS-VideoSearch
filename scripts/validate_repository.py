@@ -29,6 +29,8 @@ def main() -> int:
     missing = sorted(name for name in REQUIRED if not (ROOT / name).is_file())
     if missing:
         fail("missing required documents: " + ", ".join(missing))
+    if not (ROOT / "worker/runtime-sitecustomize.py").is_file():
+        fail("private runtime worker-path bootstrap is missing")
     for path in ROOT.rglob("*.json"):
         if any(part in IGNORED_PARTS for part in path.parts):
             continue

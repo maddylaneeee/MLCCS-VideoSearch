@@ -756,7 +756,7 @@ internal sealed class AgentHost : ApplicationContext
         var workerRoot = Path.Combine(_releaseRoot, "worker");
         var start = new ProcessStartInfo
         {
-            FileName = Path.Combine(workerRoot, "python", "python.exe"),
+            FileName = ResolvePrivatePython(),
             WorkingDirectory = workerRoot,
             UseShellExecute = false,
             CreateNoWindow = true,

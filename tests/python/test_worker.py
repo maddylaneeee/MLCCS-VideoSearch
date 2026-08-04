@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import runpy
+import shutil
 import sys
 import tempfile
 import unittest
@@ -17,6 +19,28 @@ from mlccs_worker.search_server import SearchEngine, _phonetic_match
 
 
 class WorkerTests(unittest.TestCase):
+    def test_runtime_sitecustomize_finds_source_and_installed_worker_layouts(self):
+        bootstrap = ROOT / "worker" / "runtime-sitecustomize.py"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            layouts = (
+                (root / "source" / "worker" / "python", root / "source" / "worker"),
+                (root / "install" / "components" / "runtime" / "hash", root / "install" / "current" / "worker"),
+            )
+            for runtime, worker in layouts:
+                sitecustomize = runtime / "Lib" / "site-packages" / "sitecustomize.py"
+                sitecustomize.parent.mkdir(parents=True)
+                shutil.copy2(bootstrap, sitecustomize)
+                package = worker / "mlccs_worker"
+                package.mkdir(parents=True)
+                (package / "__init__.py").write_text("", encoding="utf-8")
+                original = list(sys.path)
+                try:
+                    runpy.run_path(str(sitecustomize))
+                    self.assertEqual(str(worker.resolve()), sys.path[0])
+                finally:
+                    sys.path[:] = original
+
     def test_scene_analysis_enforces_two_to_eight_second_windows(self):
         samples = [(index * 500, 40.0 if index == 12 else 0.0) for index in range(41)]
         ranges = _segment_sample_ranges(samples)

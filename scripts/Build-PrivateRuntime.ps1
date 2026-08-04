@@ -96,3 +96,7 @@ $getPip = Get-VerifiedFile ($manifest.artifacts | Where-Object kind -eq 'get-pip
 Invoke-NativeCommand (Join-Path $runtimeRoot 'python.exe') @($getPip,'--disable-pip-version-check') 'Private runtime pip bootstrap failed.'
 foreach ($wheel in $manifest.artifacts | Where-Object kind -eq 'python-wheel') { Get-VerifiedFile $wheel | Out-Null }
 Invoke-NativeCommand (Join-Path $runtimeRoot 'python.exe') @('-m','pip','install','--no-index','--find-links',$downloadRoot,'--require-hashes','-r',(Join-Path $projectRoot 'worker/requirements.hashed.txt')) 'Private runtime dependency installation failed.'
+$sitePackages = Join-Path $runtimeRoot 'Lib/site-packages'
+New-Item -ItemType Directory -Force -Path $sitePackages | Out-Null
+Copy-Item -LiteralPath (Join-Path $projectRoot 'worker/runtime-sitecustomize.py') `
+  -Destination (Join-Path $sitePackages 'sitecustomize.py') -Force
