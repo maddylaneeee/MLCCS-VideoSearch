@@ -214,10 +214,16 @@ internal sealed class InstallerForm : Form
     private bool _deleteDownloadsOnCancellation;
     private bool _closeAfterCancellation;
     private bool _installationActive;
+    private long _lastProgressUiTimestamp;
 
     internal InstallerForm()
     {
         StartupDiagnostics.Write("InstallerForm constructor started.");
+        SetStyle(ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer |
+                 ControlStyles.ResizeRedraw, true);
+        DoubleBuffered = true;
+        SuspendLayout();
         Text = $"{Program.ProductName} 安装程序";
         var processPath = Environment.ProcessPath;
         if (!string.IsNullOrWhiteSpace(processPath))
@@ -256,7 +262,7 @@ internal sealed class InstallerForm : Form
         _browseButton.Text = "浏览…";
         _browseButton.AutoSize = true;
         _browseButton.Click += BrowseClick;
-        var pathRow = new TableLayoutPanel
+        var pathRow = new BufferedTableLayoutPanel
         {
             Dock = DockStyle.Top,
             Height = 38,
@@ -312,6 +318,7 @@ internal sealed class InstallerForm : Form
         _progress.Dock = DockStyle.Top;
         _progress.Height = 22;
         _progress.Maximum = 1000;
+        _progress.Style = ProgressBarStyle.Continuous;
 
         _installButton.Text = "安装";
         _installButton.Enabled = false;
@@ -328,7 +335,7 @@ internal sealed class InstallerForm : Form
         _cancelButton.AutoSize = true;
         _cancelButton.Padding = new Padding(12, 4, 12, 4);
         _cancelButton.Click += CancelClick;
-        var actions = new FlowLayoutPanel
+        var actions = new BufferedFlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
             Height = 52,
@@ -339,7 +346,7 @@ internal sealed class InstallerForm : Form
         actions.Controls.Add(_pauseButton);
         actions.Controls.Add(_cancelButton);
 
-        var content = new TableLayoutPanel
+        var content = new BufferedTableLayoutPanel
         {
             Dock = DockStyle.Fill,
             RowCount = 11,
@@ -370,6 +377,7 @@ internal sealed class InstallerForm : Form
         content.Controls.Add(_progress);
         Controls.Add(content);
         Controls.Add(actions);
+        ResumeLayout(performLayout: true);
 
         Shown += async (_, _) => await LoadManifestAsync();
         FormClosing += InstallerFormClosing;
@@ -623,10 +631,12 @@ internal sealed class InstallerForm : Form
                     (downloaded, detail) =>
                     {
                         var aggregate = completedBytes + downloaded;
-                        _progress.Value = (int)Math.Clamp(aggregate * 1000 / totalBytes, 0, 1000);
-                        _status.Text = string.IsNullOrWhiteSpace(detail)
+                        UpdateProgressDisplay(
+                            (int)Math.Clamp(aggregate * 1000 / totalBytes, 0, 1000),
+                            string.IsNullOrWhiteSpace(detail)
                             ? $"正在下载：{component.Name}  {FormatBytes(downloaded)} / {FormatBytes(component.Size)}"
-                            : $"{component.Name}：{detail}";
+                            : $"{component.Name}：{detail}",
+                            force: !string.IsNullOrWhiteSpace(detail));
                     });
 
                 _status.Text = $"正在后台校验下载包：{component.Name}";
@@ -647,8 +657,9 @@ internal sealed class InstallerForm : Form
                     destination,
                     _pauseController,
                     cancellationToken,
-                    new Progress<ItemProgress>(progress => _status.Text =
-                        $"正在解压：{component.Name}  {progress.Completed} / {progress.Total} 个文件"));
+                    new Progress<ItemProgress>(progress => UpdateProgressDisplay(
+                        null,
+                        $"正在解压：{component.Name}  {progress.Completed} / {progress.Total} 个文件")));
 
                 _status.Text = $"正在后台验证已安装文件：{component.Name}";
                 await VerifyFilesAsync(
@@ -656,8 +667,9 @@ internal sealed class InstallerForm : Form
                     component.Files,
                     _pauseController,
                     cancellationToken,
-                    new Progress<ItemProgress>(progress => _status.Text =
-                        $"正在验证：{component.Name}  {progress.Completed} / {progress.Total} 个文件"));
+                    new Progress<ItemProgress>(progress => UpdateProgressDisplay(
+                        null,
+                        $"正在验证：{component.Name}  {progress.Completed} / {progress.Total} 个文件")));
                 DeleteIfExists(archivePath);
                 completedBytes += component.Size;
             }
@@ -712,6 +724,25 @@ internal sealed class InstallerForm : Form
             {
                 BeginInvoke(Close);
             }
+        }
+    }
+
+    private void UpdateProgressDisplay(int? value, string status, bool force = false)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var elapsed = Stopwatch.GetElapsedTime(_lastProgressUiTimestamp, now);
+        if (!force && _lastProgressUiTimestamp != 0 && elapsed < TimeSpan.FromMilliseconds(250))
+        {
+            return;
+        }
+        _lastProgressUiTimestamp = now;
+        if (value is { } progressValue && _progress.Value != progressValue)
+        {
+            _progress.Value = progressValue;
+        }
+        if (!string.Equals(_status.Text, status, StringComparison.Ordinal))
+        {
+            _status.Text = status;
         }
     }
 
@@ -1140,6 +1171,28 @@ internal sealed class InstallerForm : Form
     {
         PropertyNameCaseInsensitive = true
     };
+}
+
+internal sealed class BufferedTableLayoutPanel : TableLayoutPanel
+{
+    internal BufferedTableLayoutPanel()
+    {
+        DoubleBuffered = true;
+        SetStyle(ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer |
+                 ControlStyles.ResizeRedraw, true);
+    }
+}
+
+internal sealed class BufferedFlowLayoutPanel : FlowLayoutPanel
+{
+    internal BufferedFlowLayoutPanel()
+    {
+        DoubleBuffered = true;
+        SetStyle(ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer |
+                 ControlStyles.ResizeRedraw, true);
+    }
 }
 
 internal static class FeedbackState

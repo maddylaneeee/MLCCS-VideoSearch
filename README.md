@@ -7,11 +7,11 @@ MLCCS Video Search `v1.0.0` 是一款仅在本机运行的 Windows 视频语义�
 ## 系统要求
 
 - Windows 10 1809（build 17763）或更高版本，或 Windows 11，x64。
-- NVIDIA GPU，至少 4 GB 显存。
+- 4 GB 级 NVIDIA GPU（允许驱动/固件保留少量显存；检测下限为 3.75 GiB）。
 - NVIDIA 驱动必须能让随应用提供的 `PyTorch 2.7.1+cu128` 报告 CUDA 可用。
 - 不需要另行安装 CUDA Toolkit；兼容的 NVIDIA 驱动是必要条件。
 
-安装器允许在硬件暂不合格时完成安装，便于先更新驱动。首次运行会显示检测到的 Windows、GPU、显存、驱动和 CUDA 状态；未达标时会硬性阻止索引和搜索，但资源库浏览、设置、日志和更新仍可使用。v1.0.0 不支持 CPU、AMD、Intel GPU 或少于 4 GB 显存的搜索/索引回退。
+安装器允许在硬件暂不合格时完成安装，便于先更新驱动。首次运行会显示检测到的 Windows、GPU、显存、驱动和 CUDA 状态；未达标时会硬性阻止索引和搜索，但资源库浏览、设置、日志和更新仍可使用。v1.0.0 不支持 CPU、AMD、Intel GPU 或低于 3.75 GiB 驱动报告显存的搜索/索引回退。
 
 ## 下载与安装
 

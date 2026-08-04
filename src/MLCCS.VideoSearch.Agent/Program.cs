@@ -633,7 +633,7 @@ internal sealed class AgentHost : ApplicationContext
             ? string.Join("；", issueNode.EnumerateArray().Select(item => item.GetString()))
             : "硬件检测未通过";
         throw new ProtocolException("CAPABILITY_UNSUPPORTED_HARDWARE",
-            $"v1.0.0 只支持 Windows 10 1809+/11 x64、至少 4 GB 显存的 NVIDIA GPU 和兼容驱动：{issues}");
+            $"v1.0.0 只支持 Windows 10 1809+/11 x64、4 GB 级 NVIDIA GPU（允许驱动保留少量显存）和兼容驱动：{issues}");
     }
 
     private async Task<object> CheckUpdateAsync(IpcEnvelope request, CancellationToken cancellationToken)
@@ -960,7 +960,7 @@ internal sealed class AgentHost : ApplicationContext
             !hardware.TryGetProperty("supported", out var supported) || !supported.GetBoolean())
         {
             File.WriteAllText(Path.Combine(_root, "agent-startup-error.log"),
-                "CAPABILITY_UNSUPPORTED_HARDWARE: 索引已阻止。请更新 Windows/NVIDIA 驱动并确保显存至少 4 GB。");
+                "CAPABILITY_UNSUPPORTED_HARDWARE: 索引已阻止。请更新 Windows/NVIDIA 驱动并确保使用 4 GB 级 NVIDIA GPU。");
             return;
         }
         var library = _pendingLibraries.Dequeue();

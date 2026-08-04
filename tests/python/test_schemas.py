@@ -31,7 +31,7 @@ class SchemaTests(unittest.TestCase):
             descriptor = {
                 "schemaVersion": 1, "productVersion": "1.0.0", "minimumCompatibleVersion": "1.0.0",
                 "requirements": {"minimumWindowsVersion": "Windows 10 1809", "minimumWindowsBuild": 17763,
-                                 "architecture": "x64", "gpuVendor": "NVIDIA", "minimumVramBytes": 4294967296,
+                                 "architecture": "x64", "gpuVendor": "NVIDIA", "minimumVramBytes": 4026531840,
                                  "cudaRuntime": "PyTorch 2.7.1+cu128", "cudaToolkitRequired": False},
                 "entryPoint": "current/ui/app.exe", "publishedUtc": "2026-08-04T00:00:00.0000000+00:00",
                 "releaseNotes": "notes", "mandatory": False,

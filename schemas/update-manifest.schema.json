@@ -16,7 +16,7 @@
         "minimumWindowsBuild": { "const": 17763 },
         "architecture": { "const": "x64" },
         "gpuVendor": { "const": "NVIDIA" },
-        "minimumVramBytes": { "minimum": 4294967296 },
+        "minimumVramBytes": { "minimum": 4026531840 },
         "cudaRuntime": { "const": "PyTorch 2.7.1+cu128" },
         "cudaToolkitRequired": { "const": false }
       }

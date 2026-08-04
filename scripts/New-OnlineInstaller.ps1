@@ -121,7 +121,7 @@ if ($OcrModelStage) { $components += New-Component 'ocr-models' 'PP-OCRv5 中文
 
 $manifestDescriptor = [ordered]@{
   schemaVersion=1; productVersion=$version; minimumCompatibleVersion='1.0.0'
-  requirements=[ordered]@{ minimumWindowsVersion='Windows 10 1809'; minimumWindowsBuild=17763; architecture='x64'; gpuVendor='NVIDIA'; minimumVramBytes=4294967296; cudaRuntime='PyTorch 2.7.1+cu128'; cudaToolkitRequired=$false }
+  requirements=[ordered]@{ minimumWindowsVersion='Windows 10 1809'; minimumWindowsBuild=17763; architecture='x64'; gpuVendor='NVIDIA'; minimumVramBytes=4026531840; cudaRuntime='PyTorch 2.7.1+cu128'; cudaToolkitRequired=$false }
   entryPoint='current/ui/MLCCS.VideoSearch.UI.exe'; publishedUtc=[DateTimeOffset]::UtcNow.ToString('O')
   releaseNotes=Get-Content -LiteralPath (Join-Path $projectRoot 'release-notes.md') -Raw
   mandatory=$false; components=$components; keyId='manifest-v1'

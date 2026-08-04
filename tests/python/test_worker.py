@@ -14,7 +14,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "worker"))
 
-from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_speech, require_v1_hardware
+from mlccs_worker.capabilities import (Capabilities, has_v1_vram, recommend_whisper,
+                                       require_speech, require_v1_hardware)
 from mlccs_worker.contracts import WorkerError
 from mlccs_worker.batch_index import (_database, _record_file_failure, _remove_missing_assets,
                                       _segment_sample_ranges, _speech_window_groups)
@@ -92,6 +93,11 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual("medium", recommend_whisper(8 * 1024**3)["model"])
         self.assertEqual("large-v3", recommend_whisper(12 * 1024**3)["model"])
         self.assertEqual("float16", recommend_whisper(12 * 1024**3)["compute_type"])
+
+    def test_four_gb_class_gpu_allows_driver_reserved_memory(self):
+        self.assertTrue(has_v1_vram(4095 * 1024**2))
+        self.assertTrue(has_v1_vram(3840 * 1024**2))
+        self.assertFalse(has_v1_vram(3839 * 1024**2))
 
     def test_production_catalog_schema_uses_sqlite_outbox_without_live_tables(self):
         with tempfile.TemporaryDirectory() as directory:

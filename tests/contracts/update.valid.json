@@ -7,7 +7,7 @@
     "minimumWindowsBuild": 17763,
     "architecture": "x64",
     "gpuVendor": "NVIDIA",
-    "minimumVramBytes": 4294967296,
+    "minimumVramBytes": 4026531840,
     "cudaRuntime": "PyTorch 2.7.1+cu128",
     "cudaToolkitRequired": false
   },

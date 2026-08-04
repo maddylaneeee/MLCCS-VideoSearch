@@ -6,6 +6,14 @@ import platform
 import shutil
 import subprocess
 
+MINIMUM_V1_VRAM_BYTES = 3840 * 1024**2
+
+
+def has_v1_vram(vram_bytes: int) -> bool:
+    """Accept 4 GB-class GPUs whose driver reports a small reserved-memory deduction."""
+    return vram_bytes >= MINIMUM_V1_VRAM_BYTES
+
+
 @dataclass(frozen=True)
 class Capabilities:
     windows_version: str
@@ -68,8 +76,8 @@ def detect(storage_path: str) -> Capabilities:
         issues.append("需要 x64 Windows")
     if not gpu_name or "nvidia" not in gpu_name.casefold():
         issues.append("未检测到受支持的 NVIDIA GPU")
-    if vram < 4 * 1024**3:
-        issues.append("NVIDIA GPU 显存必须至少为 4 GB")
+    if not has_v1_vram(vram):
+        issues.append("需要 4 GB 级 NVIDIA GPU（驱动报告显存不得低于 3.75 GiB）")
     if not cuda:
         issues.append("随应用提供的 PyTorch CUDA 12.8 运行时无法使用当前驱动")
     battery = psutil.sensors_battery()

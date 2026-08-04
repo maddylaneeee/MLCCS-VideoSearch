@@ -72,8 +72,11 @@ class SearchEngine:
             self.torch = torch
         if not self.torch.cuda.is_available():
             raise RuntimeError("CAPABILITY_UNSUPPORTED_HARDWARE: CUDA 12.8 runtime is unavailable")
-        if self.torch.cuda.get_device_properties(0).total_memory < 4 * 1024**3:
-            raise RuntimeError("CAPABILITY_UNSUPPORTED_HARDWARE: at least 4 GB NVIDIA VRAM is required")
+        from .capabilities import has_v1_vram
+        if not has_v1_vram(self.torch.cuda.get_device_properties(0).total_memory):
+            raise RuntimeError(
+                "CAPABILITY_UNSUPPORTED_HARDWARE: a 4 GB-class NVIDIA GPU is required "
+                "(driver-reported VRAM must be at least 3.75 GiB)")
 
     def _ensure_visual_model(self) -> None:
         if self.clip_model is not None:
