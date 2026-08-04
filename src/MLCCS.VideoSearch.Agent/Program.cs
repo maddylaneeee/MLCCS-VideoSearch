@@ -97,7 +97,8 @@ internal sealed class AgentHost : ApplicationContext
         };
         _tray.DoubleClick += (_, _) => OpenUi();
         ReloadConfiguration(force: true);
-        _ = RunAsync(_shutdown.Token);
+        // Long-running IPC/indexing work must never capture or block the WinForms tray thread.
+        _ = Task.Run(() => RunAsync(_shutdown.Token));
     }
 
     private async Task RunAsync(CancellationToken cancellationToken)
@@ -142,7 +143,7 @@ internal sealed class AgentHost : ApplicationContext
             var pipe = CreatePipe(PipeName);
             try
             {
-                await pipe.WaitForConnectionAsync(cancellationToken);
+                await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
             catch
             {
@@ -159,9 +160,9 @@ internal sealed class AgentHost : ApplicationContext
         {
             try
             {
-                var request = await PipeFraming.ReadAsync(pipe, cancellationToken);
-                var response = await HandleRequestAsync(request, cancellationToken);
-                await PipeFraming.WriteAsync(pipe, response, cancellationToken);
+                var request = await PipeFraming.ReadAsync(pipe, cancellationToken).ConfigureAwait(false);
+                var response = await HandleRequestAsync(request, cancellationToken).ConfigureAwait(false);
+                await PipeFraming.WriteAsync(pipe, response, cancellationToken).ConfigureAwait(false);
             }
             catch (EndOfStreamException) { }
             catch (IOException) when (!pipe.IsConnected) { }
