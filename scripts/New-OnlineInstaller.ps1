@@ -38,6 +38,15 @@ function Copy-Tree([string]$Source,[string]$Destination,[string[]]$Exclude = @()
   if ($LASTEXITCODE -gt 7) { throw "robocopy failed: $Source" }
 }
 
+function Get-ReusableArchive([string]$Id) {
+  $reusableIds = @('private-runtime','qdrant-server','visual-model','text-model')
+  if (-not $ReusePackageRoot -or $reusableIds -notcontains $Id) { return $null }
+  $candidate = Join-Path $ReusePackageRoot "$Id-$version.zip"
+  if (-not (Test-Path -LiteralPath $candidate)) { return $null }
+  if ((Get-Item -LiteralPath $candidate).Length -le 0) { throw "Reusable archive is empty: $candidate" }
+  return $candidate
+}
+
 function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$Scope,
   [bool]$Required,[bool]$DefaultSelected,[string]$Stage) {
   if (-not (Test-Path -LiteralPath $Stage)) { throw "Missing component stage: $Stage" }
@@ -46,13 +55,11 @@ function New-Component([string]$Id,[string]$Name,[string]$Description,[string]$S
   }
   $archiveName = "$Id-$version.zip"
   $archivePath = Join-Path $packageRoot $archiveName
-  $reusableIds = @('private-runtime','qdrant-server','visual-model','text-model')
-  $reusableArchive = if ($ReusePackageRoot -and $reusableIds -contains $Id) {
-    Join-Path $ReusePackageRoot $archiveName
-  } else { $null }
-  if ($reusableArchive -and (Test-Path -LiteralPath $reusableArchive)) {
-    if ((Get-Item -LiteralPath $reusableArchive).Length -le 0) { throw "Reusable archive is empty: $reusableArchive" }
-    Copy-Item -LiteralPath $reusableArchive -Destination $archivePath
+  $reusableArchive = Get-ReusableArchive $Id
+  if ($reusableArchive) {
+    # Reused inputs are immutable and on the same release-build volume. A hard
+    # link preserves exact bytes without temporarily requiring a second 3.7 GB copy.
+    New-Item -ItemType HardLink -Path $archivePath -Target $reusableArchive | Out-Null
     Write-Host "Reused locked component archive: $archiveName"
   } else {
     $previousErrorPreference = $ErrorActionPreference
@@ -85,12 +92,12 @@ Copy-Tree $FrozenRelease $coreStage @((Join-Path $FrozenRelease 'worker\python')
 $licenseStage = Join-Path $coreStage 'licenses'
 python (Join-Path $projectRoot 'scripts/generate_release_metadata.py') --output $licenseStage
 if ($LASTEXITCODE) { throw 'SBOM/license generation failed.' }
-$runtimeComponent = Join-Path $stageRoot 'runtime'
-$visualComponent = Join-Path $stageRoot 'visual-model'
-$textComponent = Join-Path $stageRoot 'text-model'
-Copy-Tree $RuntimeStage $runtimeComponent
-Copy-Tree $VisualModelStage $visualComponent
-Copy-Tree $TextModelStage $textComponent
+$runtimeComponent = if (Get-ReusableArchive 'private-runtime') { $RuntimeStage } else { Join-Path $stageRoot 'runtime' }
+$visualComponent = if (Get-ReusableArchive 'visual-model') { $VisualModelStage } else { Join-Path $stageRoot 'visual-model' }
+$textComponent = if (Get-ReusableArchive 'text-model') { $TextModelStage } else { Join-Path $stageRoot 'text-model' }
+if ($runtimeComponent -ne $RuntimeStage) { Copy-Tree $RuntimeStage $runtimeComponent }
+if ($visualComponent -ne $VisualModelStage) { Copy-Tree $VisualModelStage $visualComponent }
+if ($textComponent -ne $TextModelStage) { Copy-Tree $TextModelStage $textComponent }
 
 $qdrantLock = Get-Content -LiteralPath (Join-Path $projectRoot 'release/qdrant.lock.json') -Raw | ConvertFrom-Json
 $qdrantArchive = Join-Path $downloadRoot $qdrantLock.filename
