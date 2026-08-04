@@ -16,6 +16,8 @@ $logRoot = Join-Path $artifactFull 'logs'
 New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 $statusPath = Join-Path $artifactFull 'status.json'
 $started = [DateTimeOffset]::UtcNow
+$env:MSBUILDDISABLENODEREUSE = '1'
+$env:DOTNET_CLI_USE_MSBUILD_SERVER = '0'
 
 function Write-Status([string]$State,[string]$Step,[string]$ErrorMessage = '') {
   $value = [ordered]@{
@@ -42,7 +44,7 @@ Write-Status 'running' 'start'
 try {
   $dotnet = (Get-Command dotnet.exe -ErrorAction Stop).Source
   Invoke-Native 'restore' $dotnet @('restore','MLCCS.VideoSearch.sln','-p:RestoreLockedMode=false','-p:VersionPrefix=1.0.0')
-  Invoke-Native 'windows-build' $dotnet @('build','MLCCS.VideoSearch.sln','-c','Release','-p:EnableWindowsTargeting=true','-p:VersionPrefix=1.0.0','--no-restore')
+  Invoke-Native 'windows-build' $dotnet @('build','MLCCS.VideoSearch.sln','-c','Release','-p:EnableWindowsTargeting=true','-p:VersionPrefix=1.0.0','-p:UseSharedCompilation=false','--no-restore')
   Invoke-Native 'core-tests' $dotnet @('test','tests/MLCCS.VideoSearch.Core.Tests/MLCCS.VideoSearch.Core.Tests.csproj','-c','Release','--no-build')
   Invoke-Native 'installer-acceptance' $dotnet @('run','--project','tests/MLCCS.VideoSearch.Installer.Acceptance/MLCCS.VideoSearch.Installer.Acceptance.csproj','-c','Release','--no-build')
 
