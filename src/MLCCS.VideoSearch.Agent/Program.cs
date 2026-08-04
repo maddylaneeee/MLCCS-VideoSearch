@@ -104,11 +104,21 @@ internal sealed class AgentHost : ApplicationContext
     {
         try
         {
-            await new CatalogDatabase(Path.Combine(_root, "catalog.db")).InitializeAsync(cancellationToken);
+            // Begin accepting UI requests before any database, driver, or worker startup.
+            // Users must still be able to view/edit library settings when those subsystems stall.
+            var pipeTask = AcceptPipeAsync(cancellationToken);
+            try
+            {
+                await new CatalogDatabase(Path.Combine(_root, "catalog.db")).InitializeAsync(cancellationToken);
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                AppendLog(Path.Combine(_root, "catalog-startup.log"), error.Message);
+            }
             // IPC must be available even if a driver or hardware probe is slow or wedged.
             // Indexing waits for a successful probe, but library/settings operations do not.
             _ = DetectHardwareAtStartupAsync(cancellationToken);
-            await Task.WhenAll(AcceptPipeAsync(cancellationToken), QueueLoopAsync(cancellationToken));
+            await Task.WhenAll(pipeTask, QueueLoopAsync(cancellationToken));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
         catch (Exception exception)
