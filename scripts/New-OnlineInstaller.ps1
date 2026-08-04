@@ -25,6 +25,10 @@ $packageRoot = Join-Path $outputFull 'packages'
 $downloadRoot = Join-Path $outputFull 'downloads'
 New-Item -ItemType Directory -Force -Path $stageRoot,$packageRoot,$downloadRoot | Out-Null
 
+function Write-Utf8NoBom([string]$Path, [string]$Content) {
+  [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
+}
+
 Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Concurrent;
@@ -123,7 +127,7 @@ $unsignedManifest = [ordered]@{
   mandatory=$false; components=$components; keyId='manifest-v1'; manifestSignature=''
 }
 $manifestPath = Join-Path $packageRoot 'release-manifest.unsigned.json'
-$unsignedManifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -Encoding utf8NoBOM
+Write-Utf8NoBom $manifestPath ($unsignedManifest | ConvertTo-Json -Depth 12)
 
 $installerProject = Join-Path $projectRoot 'installer/MLCCS.VideoSearch.OnlineInstaller/MLCCS.VideoSearch.OnlineInstaller.csproj'
 $setupStage = Join-Path $outputFull 'setup'
@@ -141,7 +145,7 @@ $publication = [ordered]@{
   requiredDownloadBytes=($components | Where-Object required | Measure-Object size -Sum).Sum
   components=@($components | ForEach-Object { [ordered]@{ id=$_.id; file=([Uri]$_.url).Segments[-1]; size=$_.size; sha256=$_.sha256 } })
 }
-$publication | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $outputFull 'publication-record.json') -Encoding utf8NoBOM
+Write-Utf8NoBom (Join-Path $outputFull 'publication-record.json') ($publication | ConvertTo-Json -Depth 8)
 Copy-Item -LiteralPath (Join-Path $licenseStage 'MLCCS-VideoSearch-1.0.0.cdx.json') -Destination $packageRoot
 Copy-Item -LiteralPath (Join-Path $licenseStage 'THIRD-PARTY-LICENSES.csv') -Destination $packageRoot
 Write-Host "Unsigned v1.0.0 payload ready at $outputFull. Return only manifest metadata to the Mac for production signing."

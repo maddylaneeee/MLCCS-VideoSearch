@@ -9,6 +9,37 @@ $downloadRoot = Join-Path $projectRoot 'artifacts/downloads'
 $runtimeRoot = Join-Path $projectRoot 'worker/python'
 New-Item -ItemType Directory -Force -Path $downloadRoot,$runtimeRoot | Out-Null
 
+Add-Type -AssemblyName System.Net.Http
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+function Receive-ResumableFile([string]$Uri, [string]$Destination) {
+  $offset = if (Test-Path -LiteralPath $Destination) { (Get-Item -LiteralPath $Destination).Length } else { 0 }
+  $handler = [System.Net.Http.HttpClientHandler]::new()
+  $client = [System.Net.Http.HttpClient]::new($handler)
+  $client.Timeout = [TimeSpan]::FromHours(2)
+  $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, $Uri)
+  if ($offset -gt 0) {
+    $request.Headers.Range = [System.Net.Http.Headers.RangeHeaderValue]::new([long]$offset, $null)
+  }
+  try {
+    $response = $client.SendAsync($request, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
+    try {
+      $response.EnsureSuccessStatusCode() | Out-Null
+      $append = $offset -gt 0 -and $response.StatusCode -eq [System.Net.HttpStatusCode]::PartialContent
+      $mode = if ($append) { [IO.FileMode]::Append } else { [IO.FileMode]::Create }
+      $input = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
+      try {
+        $output = [IO.File]::Open($Destination, $mode, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try { $input.CopyTo($output) } finally { $output.Dispose() }
+      } finally { $input.Dispose() }
+    } finally { $response.Dispose() }
+  } finally {
+    $request.Dispose()
+    $client.Dispose()
+    $handler.Dispose()
+  }
+}
+
 function Get-VerifiedFile($artifact) {
   $destination = Join-Path $downloadRoot $artifact.filename
   if (Test-Path $destination) {
@@ -28,9 +59,7 @@ function Get-VerifiedFile($artifact) {
     return $destination
   }
   $partial = "$destination.partial"
-  $offset = if (Test-Path $partial) { (Get-Item $partial).Length } else { 0 }
-  $headers = if ($offset) { @{ Range = "bytes=$offset-" } } else { @{} }
-  Invoke-WebRequest -Uri $artifact.url -Headers $headers -OutFile $partial -Resume:$($offset -gt 0)
+  Receive-ResumableFile ([string]$artifact.url) $partial
   if ((Get-Item $partial).Length -ne [int64]$artifact.size) { throw "Size mismatch: $($artifact.id)" }
   if ((Get-FileHash $partial -Algorithm SHA256).Hash.ToLowerInvariant() -ne $artifact.sha256) { throw "Hash mismatch: $($artifact.id)" }
   Move-Item -Force $partial $destination
