@@ -445,14 +445,14 @@
       "license": "MIT"
     },
     {
-      "id": "pypi-paddlex-3.7.2",
+      "id": "pypi-paddlex-3.1.3",
       "kind": "python-wheel",
       "package": "paddlex",
-      "version": "3.7.2",
-      "filename": "paddlex-3.7.2-py3-none-any.whl",
-      "size": 2239708,
-      "url": "https://files.pythonhosted.org/packages/40/52/9bbb9cd5f4fbbbefc7391c7d1ee61df8d511017a31e6933f6744b063fdab/paddlex-3.7.2-py3-none-any.whl",
-      "sha256": "f1678bf650bbaccfd8f0d4e49d0ae631b4685c829fdae6e802ccd90d4fcb9a7f",
+      "version": "3.1.3",
+      "filename": "paddlex-3.1.3-py3-none-any.whl",
+      "size": 1688519,
+      "url": "https://files.pythonhosted.org/packages/90/57/637bce98fca9e238510fe2514b465c59e5f6049c39378d8ec4d82072d143/paddlex-3.1.3-py3-none-any.whl",
+      "sha256": "86d752dbace266bbb3be2c871158f32a5dc43e03b5347070757bade34ed6ad1c",
       "license": "Apache-2.0"
     },
     {

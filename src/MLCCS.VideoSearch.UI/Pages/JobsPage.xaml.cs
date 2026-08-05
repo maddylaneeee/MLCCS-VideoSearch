@@ -80,12 +80,25 @@ public sealed partial class JobsPage : Page
                     : "自动索引已开启；检测到新增或修改文件后会在此显示。";
                 return;
             }
-            var stage = root.GetProperty("status").GetString() ?? "Unknown";
-            var progress = root.GetProperty("progress").GetDouble();
+            var stage = root.TryGetProperty("status", out var stageValue) && stageValue.ValueKind == JsonValueKind.String
+                ? stageValue.GetString() ?? "Unknown" : "Unknown";
+            var stageLabel = root.TryGetProperty("stageLabel", out var stageLabelValue) &&
+                             stageLabelValue.ValueKind == JsonValueKind.String
+                ? stageLabelValue.GetString() ?? stage : stage;
+            var progress = root.TryGetProperty("progress", out var progressValue) && progressValue.ValueKind == JsonValueKind.Number
+                ? Math.Clamp(progressValue.GetDouble(), 0, 1) : 0;
             var frames = root.TryGetProperty("segmentsIndexed", out var segmentsValue)
                 ? segmentsValue.GetInt64() : 0;
-            var rate = root.TryGetProperty("segmentsPerSecond", out var rateValue)
+            var rate = root.TryGetProperty("framesPerSecond", out var rateValue) && rateValue.ValueKind == JsonValueKind.Number
                 ? rateValue.GetDouble() : 0;
+            var workCompleted = root.TryGetProperty("workCompleted", out var workCompletedValue) && workCompletedValue.ValueKind == JsonValueKind.Number
+                ? workCompletedValue.GetInt32() : completed;
+            var workTotal = root.TryGetProperty("workTotal", out var workTotalValue) && workTotalValue.ValueKind == JsonValueKind.Number
+                ? workTotalValue.GetInt32() : 0;
+            var stageCompleted = root.TryGetProperty("stageCompleted", out var stageCompletedValue) && stageCompletedValue.ValueKind == JsonValueKind.Number
+                ? stageCompletedValue.GetInt32() : 0;
+            var stageTotal = root.TryGetProperty("stageTotal", out var stageTotalValue) && stageTotalValue.ValueKind == JsonValueKind.Number
+                ? stageTotalValue.GetInt32() : 0;
             var current = root.TryGetProperty("currentFile", out var file) && file.ValueKind == JsonValueKind.String
                 ? Path.GetFileName(file.GetString()) : "—";
             var completed = root.TryGetProperty("filesCompleted", out var completedValue) ? completedValue.GetInt32() : 0;
@@ -113,10 +126,12 @@ public sealed partial class JobsPage : Page
             StatusTitleText.Text = staleWorkerStatus ? "正在启动新一轮自动索引" :
                 stage == "Completed" ? "索引已完成" :
                 stage == "Paused" ? "索引已暂停" :
-                stage == "Failed" ? "索引失败" : $"正在索引：{stage}";
+                stage == "Failed" ? "索引失败" : $"正在索引：{stageLabel}";
             StatusMessageText.Text = staleWorkerStatus
                 ? "检测到资源库变化，Worker 正在加载；首份新状态写入后将显示实时进度。"
-                : $"已提交 {frames:N0} 个视觉向量 · {progress:P1}";
+                : workTotal > 0
+                    ? $"总进度 {progress:P1} · 当前 {stageLabel} {stageCompleted:N0}/{stageTotal:N0} · 已完成 {workCompleted:N0}/{workTotal:N0} 项"
+                    : $"总进度 {progress:P1} · 已完成 {frames:N0} 个画面片段";
             ErrorBar.IsOpen = stage == "Failed" && !staleWorkerStatus;
             if (stage == "Failed" && !staleWorkerStatus)
             {
@@ -125,7 +140,7 @@ public sealed partial class JobsPage : Page
                                    errorNode.ValueKind == JsonValueKind.String
                     ? errorNode.GetString() : "请打开状态目录查看日志。";
             }
-            CompletedText.Text = completed.ToString("N0");
+            CompletedText.Text = workTotal > 0 ? $"{workCompleted:N0}/{workTotal:N0}" : completed.ToString("N0");
             FailedText.Text = failed.ToString("N0");
             var remaining = stage == "Paused" ? _etaBaseSeconds :
                 Math.Max(0, _etaBaseSeconds - (DateTimeOffset.UtcNow - _etaBaseUtc).TotalSeconds);
@@ -133,17 +148,14 @@ public sealed partial class JobsPage : Page
                 ? TimeSpan.FromSeconds(remaining).ToString(remaining >= 3600 ? @"h\:mm\:ss" : @"m\:ss")
                 : "—";
             CurrentFileStatus.Text = $"当前文件：{current}";
-            var decoders = root.TryGetProperty("decoderWorkers", out var decoderValue) ? decoderValue.GetInt32() : 1;
             var cuda = root.TryGetProperty("cuda", out var cudaValue) && cudaValue.ValueKind == JsonValueKind.String
                 ? $"CUDA {cudaValue.GetString()}" : "CPU";
             var gpu = root.TryGetProperty("gpu", out var gpuValue) && gpuValue.ValueKind == JsonValueKind.String
                 ? gpuValue.GetString() : "GPU 信息暂不可用";
-            var cpuThreads = root.TryGetProperty("cpuThreads", out var cpuValue) &&
-                             cpuValue.ValueKind == JsonValueKind.Number ? cpuValue.GetInt32() : 0;
-            var batch = root.TryGetProperty("batchSize", out var batchValue) &&
-                        batchValue.ValueKind == JsonValueKind.Number ? batchValue.GetInt32() : 0;
-            HardwareStatus.Text = $"硬件：{gpu} · {cuda} · CPU 线程 {(cpuThreads > 0 ? cpuThreads.ToString() : "—")} · 解码器 {decoders} · 批大小 {(batch > 0 ? batch.ToString() : "—")}";
-            ThroughputStatus.Text = $"真实吞吐：{rate:N2} 帧/秒（按数据库已提交向量与墙钟时间计算）";
+            HardwareStatus.Text = $"设备：{gpu} · {cuda}";
+            ThroughputStatus.Text = rate > 0.01
+                ? $"实时处理速度：{rate:N1} 帧/秒"
+                : "实时处理速度：正在采样";
         }
         catch (Exception error)
         {

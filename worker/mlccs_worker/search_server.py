@@ -184,7 +184,11 @@ class SearchEngine:
             item["explanations"].append(explanation)
             item["scoreContributions"].append({"source": source_name, "rank": rank,
                                                 "rrf": contribution, "rawScore": raw_score})
-            item["thumbnail"] = item.get("thumbnail") or self._nearest_thumbnail(connection, asset_id, timestamp_ms)
+            # media_assets.thumbnail is the library-card image (normally the first
+            # visual segment).  Search results must instead show the segment that
+            # produced this hit, otherwise every result misleadingly looks like
+            # the start of its video.
+            item["thumbnail"] = self._nearest_thumbnail(connection, asset_id, timestamp_ms) or item.get("thumbnail")
 
         columns = []
         if source in ("all", "filename"):

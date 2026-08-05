@@ -264,6 +264,36 @@ class WorkerTests(unittest.TestCase):
             finally:
                 engine.close()
 
+    def test_visual_hit_uses_thumbnail_nearest_to_the_hit_timestamp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "catalog.db"
+            connection = _database(database)
+            connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\\\L',1,'now')")
+            connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                fast_fingerprint,media_kind,duration_ms,status) VALUES('asset','lib','D:\\\\L\\\\a.mp4',1,'now','f','video',20000,'Indexed')""")
+            connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                size_bytes,modified_utc,duration_ms,status,thumbnail_path)
+                VALUES('D:\\\\L\\\\a.mp4','asset','D:\\\\L','a.mp4','.mp4',1,'now',20000,'Indexed','first.jpg')""")
+            connection.execute("INSERT INTO visual_segments VALUES('first','asset',0,2000,'[]','first.jpg',1,'model')")
+            connection.execute("INSERT INTO visual_segments VALUES('hit','asset',9000,11000,'[]','hit.jpg',1,'model')")
+            connection.commit()
+            connection.close()
+
+            class VisualQdrant:
+                def collection_exists(self, name): return name == "visual_v1"
+                def query(self, *_args):
+                    return [{"score": 0.9, "payload": {"assetId": "asset", "representativeMs": 10_000}}]
+                def close(self): pass
+
+            engine = SearchEngine(database, Path(directory) / "models", qdrant=VisualQdrant())
+            engine._visual_vector = lambda _query: [0.0]  # type: ignore[method-assign]
+            try:
+                results = engine.search("目标", "visual", 10, "off")
+                self.assertEqual("hit.jpg", results[0]["thumbnail"])
+                self.assertEqual(10_000, results[0]["timestampMs"])
+            finally:
+                engine.close()
+
 
 if __name__ == "__main__":
     unittest.main()

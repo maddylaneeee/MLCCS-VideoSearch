@@ -146,7 +146,7 @@ public sealed partial class SearchPage : Page
         SearchSessionState.Sort = (SortSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "relevance";
         SearchSessionState.HasCompletedSearch = false;
         QueryBox.IsEnabled = false;
-        SetStatus("正在搜索", "首次查询会加载锁定模型，后续查询会复用常驻 Worker。",
+        SetStatus("正在搜索", "首次查询会准备所需模型，之后的查询会更快。",
             InfoBarSeverity.Informational, remember: false);
         Results.Clear();
         try

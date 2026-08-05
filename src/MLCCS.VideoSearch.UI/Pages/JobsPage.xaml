@@ -20,7 +20,7 @@
       <Grid ColumnSpacing="16">
         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
         <Border Style="{StaticResource CardBorderStyle}" Padding="16">
-          <StackPanel><TextBlock Text="已完成文件" Opacity="0.7"/><TextBlock x:Name="CompletedText" Text="0" FontSize="28" FontWeight="SemiBold"/></StackPanel>
+          <StackPanel><TextBlock Text="已完成工作" Opacity="0.7"/><TextBlock x:Name="CompletedText" Text="0" FontSize="28" FontWeight="SemiBold"/></StackPanel>
         </Border>
         <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Padding="16">
           <StackPanel><TextBlock Text="失败文件" Opacity="0.7"/><TextBlock x:Name="FailedText" Text="0" FontSize="28" FontWeight="SemiBold"/></StackPanel>
@@ -39,9 +39,9 @@
         <StackPanel Spacing="10">
           <TextBlock x:Name="CurrentFileStatus" Text="当前文件：—" TextWrapping="Wrap"/>
           <TextBlock x:Name="HardwareStatus" Text="硬件：等待检测" TextWrapping="Wrap"/>
-          <TextBlock x:Name="ThroughputStatus" Text="吞吐：等待真实采样" TextWrapping="Wrap"/>
+          <TextBlock x:Name="ThroughputStatus" Text="处理速度：等待采样" TextWrapping="Wrap"/>
           <TextBlock x:Name="ModelDownloadStatus" Text="模型：标准视觉模型已随应用提供" TextWrapping="Wrap"/>
-          <TextBlock Text="资源策略由每台机器的 CPU、显存、内存和电源状态动态决定，不随窗口最小化而隐式降速。" TextWrapping="Wrap" Opacity="0.72"/>
+          <TextBlock Text="索引会根据这台电脑的性能自动控制资源占用。" TextWrapping="Wrap" Opacity="0.72"/>
         </StackPanel>
       </Border>
     </StackPanel>

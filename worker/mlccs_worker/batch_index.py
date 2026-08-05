@@ -10,7 +10,7 @@ import shutil
 import sqlite3
 import time
 from collections.abc import Iterable, Iterator
-from typing import Any
+from typing import Any, Callable
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from .capabilities import detect, require_v1_hardware
@@ -170,7 +170,8 @@ def _iter_scene_windows(samples: Iterable[tuple[int, Any, float]], duration_ms: 
         yield _window_from_samples(current, end_ms)
 
 
-def _scene_windows(path: Path, duration: float) -> Iterator[tuple[int, int, list[tuple[int, Any, float]]]]:
+def _scene_windows(path: Path, duration: float, on_decoded_frame: Callable[[], None] | None = None
+                   ) -> Iterator[tuple[int, int, list[tuple[int, Any, float]]]]:
     """Analyze at 2 FPS and stream bounded 2-8 second representative windows."""
     import av
     import cv2
@@ -185,6 +186,8 @@ def _scene_windows(path: Path, duration: float) -> Iterator[tuple[int, int, list
                 raise RuntimeError("不包含视频流")
             stream.thread_type = "AUTO"
             for frame in container.decode(stream):
+                if on_decoded_frame is not None:
+                    on_decoded_frame()
                 timestamp = float((frame.pts or 0) * frame.time_base)
                 if timestamp + 0.001 < target:
                     continue
@@ -402,14 +405,45 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
     failures: list[str] = []
     effective_batch = _effective_batch_size(batch_size, resource_policy, capabilities.vram_bytes)
     effective_decoders = 1  # PyAV currently uses one bounded decode stream per index process.
+    stage_plan = ["Visual"]
+    if speech_enabled:
+        stage_plan.append("Speech")
+    if ocr_enabled:
+        stage_plan.append("Ocr")
+    stage_plan.append("Text")
+    work_total = max(1, len(files) * len(stage_plan))
+    work_completed = 0
+    stage_completed = 0
+    active_stage = "Visual"
+    decoded_frames = 0
+    started_monotonic = time.monotonic()
+    last_status_emit = 0.0
+    active_visual_path: Path | None = None
+    stage_labels = {
+        "Visual": "分析画面", "LoadingVisualModel": "准备画面识别",
+        "Speech": "识别语音", "LoadingSpeechModel": "准备语音识别",
+        "Ocr": "识别画面文字", "LoadingOcrModel": "准备画面文字识别",
+        "Text": "整理搜索内容", "LoadingTextModel": "准备搜索内容",
+        "Completed": "索引已完成", "Paused": "索引已暂停", "Failed": "索引失败",
+        "Cancelled": "索引已取消",
+    }
 
     def status(stage: str, current: Path | None = None, error: str | None = None) -> None:
+        elapsed = max(0.001, time.monotonic() - started_monotonic)
+        work_rate = work_completed / elapsed
         _atomic_json(status_path, {
             "truthful": True, "runId": run_id, "status": stage, "library": str(library),
             "currentFile": str(current) if current else None, "filesTotal": len(files),
             "filesCompleted": completed, "filesFailed": len(failures), "segmentsIndexed": segments_indexed,
             "filesSkipped": skipped,
-            "progress": (completed + len(failures)) / max(1, len(files)), "samplingMode": "scene-2fps",
+            "progress": work_completed / work_total, "workCompleted": work_completed,
+            "workTotal": work_total, "stage": active_stage,
+            "stageLabel": stage_labels.get(stage, stage_labels.get(active_stage, "正在索引")),
+            "stageCompleted": stage_completed, "stageTotal": len(files),
+            "stageProgress": stage_completed / max(1, len(files)),
+            "etaSeconds": (work_total - work_completed) / work_rate if work_rate > 0 else None,
+            "framesDecoded": decoded_frames, "framesPerSecond": decoded_frames / elapsed,
+            "segmentsPerSecond": segments_indexed / elapsed, "samplingMode": "scene-2fps",
             "sceneThreshold": SCENE_THRESHOLD, "sceneMinimumSeconds": MIN_SCENE_SECONDS,
             "sceneMaximumSeconds": MAX_SCENE_SECONDS, "device": "cuda:0",
             "gpu": capabilities.gpu_name or "NVIDIA GPU", "cuda": capabilities.cuda_version,
@@ -418,12 +452,33 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             "model": CLIP_MODEL_NAME, "modelVersion": CLIP_VERSION, "error": error, "updatedUtc": _utc(),
         })
 
+    def begin_stage(stage: str) -> None:
+        nonlocal active_stage, stage_completed
+        active_stage = stage
+        stage_completed = 0
+        status(stage)
+
+    def finish_stage_unit(stage: str, current: Path | None = None) -> None:
+        nonlocal work_completed, stage_completed
+        work_completed += 1
+        stage_completed += 1
+        status(stage, current)
+
+    def note_decoded_frame() -> None:
+        nonlocal decoded_frames, last_status_emit
+        decoded_frames += 1
+        now = time.monotonic()
+        if now - last_status_emit >= 0.75:
+            last_status_emit = now
+            status("Visual", active_visual_path)
+
     def wait_if_paused() -> None:
         while pause_path.exists() and not cancel_path.exists():
             time.sleep(0.25)
 
     model = None
     try:
+        begin_stage("Visual")
         for path in files:
             if cancel_path.exists():
                 raise KeyboardInterrupt
@@ -437,7 +492,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                 if _is_visual_current(connection, asset_id, fingerprint):
                     completed += 1
                     skipped += 1
-                    status("Visual", path)
+                    finish_stage_unit("Visual", path)
                     continue
                 if model is None:
                     status("LoadingVisualModel", path)
@@ -462,7 +517,8 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     "SELECT id FROM visual_segments WHERE asset_id=?", (asset_id,))]
                 connection.execute("DELETE FROM visual_segments WHERE asset_id=?", (asset_id,))
                 new_points: set[str] = set()
-                for start_ms, end_ms, representatives in _scene_windows(path, duration):
+                active_visual_path = path
+                for start_ms, end_ms, representatives in _scene_windows(path, duration, note_decoded_frame):
                     tensors = torch.stack([_clip_tensor(rgb) for _, rgb, _ in representatives])
                     chunks = []
                     for offset in range(0, len(tensors), effective_batch):
@@ -501,17 +557,20 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             except Exception as error:
                 failures.append(f"{path.name}: {error}")
                 _record_file_failure(connection, library_id, str(library), path, asset_id, error)
+                finish_stage_unit("Visual", path)
                 continue
             # A Qdrant outage is an infrastructure failure, not a corrupt-media failure.
             # SQLite and its Outbox are already durable, so the outer job failure can be
             # resumed deterministically without mislabelling the source video.
             qdrant.replay_all(connection)
             completed += 1
+            finish_stage_unit("Visual", path)
         if model is not None:
             del model
             torch.cuda.empty_cache()
 
         if speech_enabled:
+            begin_stage("Speech")
             status("LoadingSpeechModel")
             from faster_whisper import WhisperModel
             whisper_root = extra_models_root / speech_model
@@ -519,8 +578,10 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                 raise RuntimeError("所选 Whisper 模型尚未安装")
             whisper = WhisperModel(str(whisper_root), device="cuda", compute_type="int8_float16", local_files_only=True)
             for path in files:
+                status("Speech", path)
                 asset_row = connection.execute("SELECT asset_id,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
                 if not asset_row or asset_row[1] == "Failed":
+                    finish_stage_unit("Speech", path)
                     continue
                 asset_id = asset_row[0]
                 connection.execute("SAVEPOINT speech_file")
@@ -546,19 +607,33 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     connection.execute("UPDATE media_assets SET error=? WHERE asset_id=?",
                                        (f"SPEECH: {str(error)[:480]}", asset_id))
                     connection.commit()
+                finally:
+                    finish_stage_unit("Speech", path)
             del whisper
             torch.cuda.empty_cache()
 
         if ocr_enabled:
+            begin_stage("Ocr")
             status("LoadingOcrModel")
             from paddleocr import PaddleOCR
             detection_root = ocr_models_root / "ppocrv5-mobile-det"
             recognition_root = ocr_models_root / "ppocrv5-mobile-rec"
             if not detection_root.is_dir() or not recognition_root.is_dir():
                 raise RuntimeError("选装 OCR 模型尚未安装")
-            ocr_engine = PaddleOCR(text_detection_model_dir=str(detection_root), text_recognition_model_dir=str(recognition_root),
-                                   use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False, lang="ch")
-            for asset_id, in connection.execute("SELECT id FROM assets WHERE library_id=? AND status='Indexed'", (library_id,)):
+            try:
+                ocr_engine = PaddleOCR(text_detection_model_dir=str(detection_root), text_recognition_model_dir=str(recognition_root),
+                                       use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False, lang="ch")
+            except TypeError as error:
+                if "PaddlePredictorOption" in str(error):
+                    raise RuntimeError("OCR 运行组件版本不兼容。请更新应用后重新索引画面文字。") from error
+                raise
+            for path in files:
+                status("Ocr", path)
+                asset_row = connection.execute("SELECT asset_id,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
+                if not asset_row or asset_row[1] == "Failed":
+                    finish_stage_unit("Ocr", path)
+                    continue
+                asset_id = asset_row[0]
                 connection.execute("SAVEPOINT ocr_file")
                 try:
                     connection.execute("DELETE FROM ocr_observations WHERE asset_id=?", (asset_id,))
@@ -590,13 +665,22 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     connection.execute("UPDATE media_assets SET error=? WHERE asset_id=?",
                                        (f"OCR: {str(error)[:483]}", asset_id))
                     connection.commit()
+                finally:
+                    finish_stage_unit("Ocr", path)
             del ocr_engine
             torch.cuda.empty_cache()
 
+        begin_stage("Text")
         status("LoadingTextModel")
         from sentence_transformers import SentenceTransformer
         bge = SentenceTransformer(str(bge_root), device="cuda")
-        for asset_id, name in connection.execute("SELECT asset_id,name FROM media_assets WHERE status='Indexed'"):
+        for path in files:
+            status("Text", path)
+            asset_row = connection.execute("SELECT asset_id,name,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
+            if not asset_row or asset_row[2] != "Indexed":
+                finish_stage_unit("Text", path)
+                continue
+            asset_id, name, _ = asset_row
             connection.execute("DELETE FROM speech_windows WHERE asset_id=?", (asset_id,))
             speech_rows = connection.execute("SELECT id,start_ms,end_ms,original_text FROM transcript_segments WHERE asset_id=? ORDER BY start_ms", (asset_id,)).fetchall()
             for start_ms, end_ms, group in _speech_window_groups(speech_rows):
@@ -615,6 +699,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             _refresh_fts(connection, asset_id, name)
             connection.commit()
             qdrant.replay_all(connection)
+            finish_stage_unit("Text", path)
         del bge
         torch.cuda.empty_cache()
         connection.execute("UPDATE real_index_runs SET status='Completed',completed_utc=?,files_completed=?,segments_indexed=?,error=? WHERE id=?",

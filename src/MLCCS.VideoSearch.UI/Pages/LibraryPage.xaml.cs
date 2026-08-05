@@ -149,8 +149,8 @@ public sealed partial class LibraryPage : Page
                 else LibraryStatus.IsOpen = false;
                 LibraryStateText.Text = stale ? "检测到资源变化，正在启动新一轮自动索引；资源库可继续浏览。" :
                     stage is "Completed"
-                    ? $"资源库已同步 · {Items.Count:N0} 个文件 · {frames:N0} 个视觉向量"
-                    : $"资源库可独立浏览 · 索引 {progress:P1} · 已提交 {frames:N0} 个视觉向量";
+                    ? $"资源库已同步 · {Items.Count:N0} 个文件 · {frames:N0} 个画面片段"
+                    : $"资源库可独立浏览 · 总进度 {progress:P1} · 已完成 {frames:N0} 个画面片段";
             }
             else
             {
