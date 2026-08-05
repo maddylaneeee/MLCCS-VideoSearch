@@ -51,7 +51,7 @@ jsonschema==4.26.0 --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb
 jsonschema-specifications==2025.9.1 --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe
 langchain-community==0.3.27 --hash=sha256:581f97b795f9633da738ea95da9cb78f8879b538090c9b7a68c0aed49c828f0d
 langchain-core==0.3.86 --hash=sha256:7d2a1c50d2d2a139dbc6465cd339f32d14aa43db5ac9bd232e5b567a238709e8
-langchain-openai==0.3.35 --hash=sha256:76d5707e6e81fd461d33964ad618bd326cb661a1975cef7c1cb0703576bdada5
+langchain-openai==1.4.1 --hash=sha256:6d16be615d997db80294731b8e768783f1fb8e0313668e64acd50cd68acbad20 --hash=sha256:8528bb34cc78fdfd2d895573c7917f9441cbb82db5f18ae0e6b3b75d95bdefb3
 langchain-text-splitters==0.3.11 --hash=sha256:cf079131166a487f1372c8ab5d0bfaa6c0a4291733d9c43a34a16ac9bcd6a393
 langchain==0.3.30 --hash=sha256:37e6fcce92faf70cc7bac23739d13d6c3b9a3282da4dbcc06cb7e78330ed406a
 langsmith==0.10.11 --hash=sha256:37ac446cd5655393738689e6205f9b8a54e6665405faf007f2eb85fe9ce51180
