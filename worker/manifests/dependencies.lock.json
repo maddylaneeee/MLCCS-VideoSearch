@@ -23,7 +23,7 @@
       "filename": "get-pip.py",
       "size": 2226848,
       "sha256": "a341e1a43e38001c551a1508a73ff23636a11970b61d901d9a1cad2a18f57055",
-      "url": "https://bootstrap.pypa.io/get-pip.py",
+      "url": "https://raw.githubusercontent.com/pypa/get-pip/5e84c8360eaf92009551b3eec69d734137f31cec/public/get-pip.py",
       "license": "MIT"
     },
     {
@@ -113,17 +113,6 @@
       "url": "bundled:worker/vendor/gputil-1.4.0-py3-none-any.whl",
       "sha256": "26753328efa3c8f24270cdf334d775a9fe37cf7757515844fcfad0ad4ea0ae60",
       "license": "MIT"
-    },
-    {
-      "id": "pypi-qdrant-edge-py-0.6.0",
-      "kind": "python-wheel",
-      "package": "qdrant-edge-py",
-      "version": "0.6.0",
-      "filename": "qdrant_edge_py-0.6.0-cp310-abi3-win_amd64.whl",
-      "size": 9905482,
-      "url": "https://files.pythonhosted.org/packages/73/33/b2ead1c51a59d31d19418e6d6ca8ea3ce0f32f76efdd48248a1a3791357f/qdrant_edge_py-0.6.0-cp310-abi3-win_amd64.whl",
-      "sha256": "d8376e30b53fbb5d9ac8b0aea683173096d7a775b351110aee4337460c906e71",
-      "license": "Apache-2.0"
     },
     {
       "id": "pypi-av-15.0.0",
@@ -409,7 +398,7 @@
       "size": 2747786,
       "url": "https://files.pythonhosted.org/packages/65/71/0670843133a43d43070abeb1949abfdef12a86d490bea9cd9e18e37c5ff7/tokenizers-0.22.2-cp39-abi3-win_amd64.whl",
       "sha256": "c9ea31edff2968b44a88f97d784c2f16dc0729b8b143ed004699ebca91f05c48",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "Apache-2.0"
     },
     {
       "id": "pypi-urllib3-2.7.0",
@@ -456,14 +445,14 @@
       "license": "MIT"
     },
     {
-      "id": "pypi-paddlex-3.7.2",
+      "id": "pypi-paddlex-3.1.3",
       "kind": "python-wheel",
       "package": "paddlex",
-      "version": "3.7.2",
-      "filename": "paddlex-3.7.2-py3-none-any.whl",
-      "size": 2239708,
-      "url": "https://files.pythonhosted.org/packages/40/52/9bbb9cd5f4fbbbefc7391c7d1ee61df8d511017a31e6933f6744b063fdab/paddlex-3.7.2-py3-none-any.whl",
-      "sha256": "f1678bf650bbaccfd8f0d4e49d0ae631b4685c829fdae6e802ccd90d4fcb9a7f",
+      "version": "3.1.3",
+      "filename": "paddlex-3.1.3-py3-none-any.whl",
+      "size": 1688519,
+      "url": "https://files.pythonhosted.org/packages/90/57/637bce98fca9e238510fe2514b465c59e5f6049c39378d8ec4d82072d143/paddlex-3.1.3-py3-none-any.whl",
+      "sha256": "86d752dbace266bbb3be2c871158f32a5dc43e03b5347070757bade34ed6ad1c",
       "license": "Apache-2.0"
     },
     {
@@ -651,7 +640,7 @@
       "size": 50964,
       "url": "https://files.pythonhosted.org/packages/be/2f/5108cb3ee4ba6501748c4908b908e55f42a5b66245b4cfe0c99326e1ef6e/marshmallow-3.26.2-py3-none-any.whl",
       "sha256": "013fa8a3c4c276c24d26d84ce934dc964e2aa794345a0f8c7e5a7191482c8a73",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "MIT"
     },
     {
       "id": "pypi-multidict-6.7.1",
@@ -717,7 +706,7 @@
       "size": 66469,
       "url": "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl",
       "sha256": "29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "Apache-2.0 OR BSD-2-Clause"
     },
     {
       "id": "pypi-pydantic-2.13.4",
@@ -1014,7 +1003,7 @@
       "size": 355540,
       "url": "https://files.pythonhosted.org/packages/1b/6d/3fba214c1e5e0f69991677ec3bc17023f0421776975e1de0c682dca475e2/safetensors-0.8.0-cp310-abi3-win_amd64.whl",
       "sha256": "096ec1a98435df7beb08853bb5aa9081a84f23d0adc67ed1a0a10550f608373f",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "Apache-2.0"
     },
     {
       "id": "pypi-six-1.17.0",
@@ -1278,7 +1267,7 @@
       "size": 134899,
       "url": "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl",
       "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "BSD-3-Clause"
     },
     {
       "id": "pypi-markupsafe-3.0.3",
@@ -1465,7 +1454,7 @@
       "size": 161243,
       "url": "https://files.pythonhosted.org/packages/04/e3/8912d05e04575a60a0481cc222805331b74154940528a6f419fc5bbba744/python_bidi-0.6.11-cp312-cp312-win_amd64.whl",
       "sha256": "0608bddcc1c53dfa5293499de13ca9935b31aa46d1c722c404a88c703d1a4e47",
-      "license": "SEE-PACKAGE-METADATA"
+      "license": "LGPL-3.0-or-later"
     },
     {
       "id": "pypi-python-docx-1.2.0",

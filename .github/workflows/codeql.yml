@@ -1,0 +1,29 @@
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: windows-2025
+    strategy:
+      matrix:
+        language: ['csharp', 'python']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - if: matrix.language == 'csharp'
+        shell: powershell
+        run: ./scripts/Build-Windows.ps1 -Configuration Release -SkipTests
+      - uses: github/codeql-action/analyze@v3

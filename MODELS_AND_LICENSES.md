@@ -14,17 +14,15 @@ No manifest uses a mutable `latest` revision. Download completion alone is insuf
 | Purpose | Pinned family | Dimension | License |
 |---|---|---:|---|
 | Standard visual | `xlm-roberta-base-ViT-B-32 / laion5b_s13b_b90k` | 512 | MIT |
-| High-quality visual | `xlm-roberta-large-ViT-H-14 / frozen_laion5b_s13b_b90k` | 1024 | MIT |
-| Chinese text | BGE small/base/large zh v1.5 | 512 / 768 / 1024 | MIT |
+| Required Chinese text | BGE small zh v1.5 | 512 | MIT |
 | Speech | faster-whisper tiny/base/small/medium/large-v3-turbo/large-v3 CT2 | n/a | MIT |
 | OCR | PP-OCRv5 mobile/server detection and recognition | n/a | Apache-2.0 |
-| Vector storage | Qdrant Edge Python 0.6.0 | model-dependent | Apache-2.0 |
+| Vector storage | Qdrant Server 1.18.3 Windows x64 | model-dependent | Apache-2.0 |
 
 The model lock records each repository commit, every required file and total disk bytes. Changing an embedding model or dimension requires a new collection and a modality-specific rebuild; it must never silently reuse incompatible vectors.
 
 ## Major runtime licenses
 
-CPython is PSF/Python-2.0. PyTorch, OpenCLIP, faster-whisper, BGE glue, Sentence Transformers and Qdrant Edge use their upstream open-source licenses recorded in wheel metadata and the lock. PaddleOCR/PaddlePaddle use Apache-2.0. FFmpeg build configuration and libVLC redistribution notices must be copied into the final `licenses` directory on Windows; select a compatible FFmpeg build and document whether LGPL or GPL components are enabled. Model cards and upstream license files are downloaded alongside models when part of the pinned runtime file set.
+CPython is PSF/Python-2.0. PyTorch, OpenCLIP, faster-whisper, BGE glue, Sentence Transformers and PyAV use their upstream open-source licenses recorded in wheel metadata and the lock. Qdrant Server 1.18.3 and PaddleOCR/PaddlePaddle use Apache-2.0. Model cards and upstream license files accompany their pinned model components.
 
 Before final distribution, Windows Codex must generate a third-party notices inventory from the installed private environment and resolve every `SEE-PACKAGE-METADATA` entry. Missing or incompatible licensing is a release blocker.
-

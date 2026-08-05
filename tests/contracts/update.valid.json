@@ -1,8 +1,27 @@
 {
-  "protocolVersion": 1, "appVersion": "0.1.0", "minimumCompatibleVersion": "0.1.0",
-  "downloadUrl": "https://lixinchen.ca/downloads/mlccs-videosearch/stable/0.1.0/app.zip",
-  "size": 123, "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "archiveSignature": "dGVzdA==", "publishedUtc": "2026-07-28T00:00:00Z", "releaseNotes": "acceptance", "mandatory": false,
+  "schemaVersion": 1,
+  "productVersion": "1.0.0",
+  "minimumCompatibleVersion": "1.0.0",
+  "requirements": {
+    "minimumWindowsVersion": "Windows 10 1809",
+    "minimumWindowsBuild": 17763,
+    "architecture": "x64",
+    "gpuVendor": "NVIDIA",
+    "minimumVramBytes": 4026531840,
+    "cudaRuntime": "PyTorch 2.7.1+cu128",
+    "cudaToolkitRequired": false
+  },
+  "entryPoint": "current/ui/MLCCS.VideoSearch.UI.exe",
+  "publishedUtc": "2026-08-03T00:00:00Z",
+  "releaseNotes": "v1.0.0",
+  "mandatory": false,
+  "components": [{
+    "id": "app-core", "name": "应用核心", "description": "UI, Agent, Worker and updater",
+    "url": "https://lixinchen.ca/docs/mlccs-video-search/1.0.0/app-core-1.0.0.zip",
+    "installScope": "current", "required": true, "defaultSelected": true, "size": 123,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "files": [{"path": "ui/MLCCS.VideoSearch.UI.exe", "size": 12, "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]
+  }],
+  "keyId": "manifest-v1",
   "manifestSignature": "dGVzdA=="
 }
-

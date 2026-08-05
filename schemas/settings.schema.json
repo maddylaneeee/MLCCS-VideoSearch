@@ -3,55 +3,26 @@
   "$id": "https://lixinchen.ca/schemas/mlccs-videosearch/settings-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "privacy", "indexing", "search", "updates", "storage"],
+  "required": ["schemaVersion", "libraries", "autoStart", "autoIndexNewFiles", "intervalSeconds",
+    "batchSize", "decoderWorkers", "resourcePolicy", "filename", "visual", "speech", "ocr",
+    "speechModel", "automaticUpdates", "skippedVersion", "phoneticExpansion", "searchModelIdleMinutes"],
   "properties": {
     "schemaVersion": { "const": 1 },
-    "privacy": {
-      "type": "object", "additionalProperties": false,
-      "required": ["helpImprove", "fullLogUploadConsent"],
-      "properties": {
-        "helpImprove": { "type": "boolean", "default": true },
-        "fullLogUploadConsent": { "const": false }
-      }
-    },
-    "indexing": {
-      "type": "object", "additionalProperties": false,
-      "required": ["filename", "visual", "speech", "ocr", "background", "batteryPolicy", "concurrency"],
-      "properties": {
-        "filename": { "type": "boolean", "default": true },
-        "visual": { "type": "boolean", "default": true },
-        "speech": { "type": "boolean", "default": false },
-        "ocr": { "type": "boolean", "default": false },
-        "background": { "type": "boolean", "default": true },
-        "batteryPolicy": { "enum": ["pause", "reduced", "full"], "default": "reduced" },
-        "concurrency": { "enum": ["adaptive", "low", "high"], "default": "adaptive" }
-      }
-    },
-    "search": {
-      "type": "object", "additionalProperties": false,
-      "required": ["phoneticExpansion"],
-      "properties": { "phoneticExpansion": { "enum": ["off", "low", "medium", "high"], "default": "medium" } }
-    },
-    "updates": {
-      "type": "object", "additionalProperties": false,
-      "required": ["automaticCheck", "channel", "skippedVersion"],
-      "properties": {
-        "automaticCheck": { "type": "boolean", "default": true },
-        "channel": { "const": "stable" },
-        "skippedVersion": { "type": ["string", "null"] }
-      }
-    },
-    "storage": {
-      "type": "object", "additionalProperties": false,
-      "required": ["dataRoot", "modelRoot", "cacheRoot", "indexRoot", "cacheLimitBytes"],
-      "properties": {
-        "dataRoot": { "type": "string", "minLength": 1 },
-        "modelRoot": { "type": "string", "minLength": 1 },
-        "cacheRoot": { "type": "string", "minLength": 1 },
-        "indexRoot": { "type": "string", "minLength": 1 },
-        "cacheLimitBytes": { "type": "integer", "minimum": 1073741824 }
-      }
-    }
+    "libraries": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "autoStart": { "type": "boolean" },
+    "autoIndexNewFiles": { "type": "boolean" },
+    "intervalSeconds": { "type": "number", "minimum": 2, "maximum": 8 },
+    "batchSize": { "type": "integer", "minimum": 0 },
+    "decoderWorkers": { "type": "integer", "minimum": 0 },
+    "resourcePolicy": { "enum": ["adaptive-full", "balanced", "efficiency"] },
+    "filename": { "const": true },
+    "visual": { "const": true },
+    "speech": { "type": "boolean" },
+    "ocr": { "type": "boolean" },
+    "speechModel": { "enum": ["whisper-tiny", "whisper-base", "whisper-small", "whisper-medium", "whisper-large-v3-turbo", "whisper-large-v3"] },
+    "automaticUpdates": { "type": "boolean" },
+    "skippedVersion": { "type": ["string", "null"] },
+    "phoneticExpansion": { "enum": ["off", "low", "medium", "high"] },
+    "searchModelIdleMinutes": { "enum": [5, 10, 30] }
   }
 }
-

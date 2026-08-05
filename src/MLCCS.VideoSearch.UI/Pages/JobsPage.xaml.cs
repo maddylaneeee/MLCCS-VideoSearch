@@ -35,6 +35,8 @@ public sealed partial class JobsPage : Page
             var agent = await AgentClient.RequestAsync("agent.status");
             var configured = agent.GetProperty("configured").GetBoolean();
             var paused = agent.GetProperty("paused").GetBoolean();
+            var indexControl = agent.TryGetProperty("indexControl", out var controlNode) &&
+                               controlNode.ValueKind == JsonValueKind.String ? controlNode.GetString() : null;
             PauseButton.Content = paused ? "继续" : "暂停";
             if (agent.TryGetProperty("modelDownloadStatus", out var modelStatus) &&
                 modelStatus.ValueKind == JsonValueKind.Object)
@@ -80,15 +82,33 @@ public sealed partial class JobsPage : Page
                     : "自动索引已开启；检测到新增或修改文件后会在此显示。";
                 return;
             }
-            var stage = root.GetProperty("status").GetString() ?? "Unknown";
-            var progress = root.GetProperty("progress").GetDouble();
-            var frames = root.GetProperty("framesIndexed").GetInt64();
-            var rate = root.GetProperty("framesPerSecond").GetDouble();
+            var stage = root.TryGetProperty("status", out var stageValue) && stageValue.ValueKind == JsonValueKind.String
+                ? stageValue.GetString() ?? "Unknown" : "Unknown";
+            var stageLabel = root.TryGetProperty("stageLabel", out var stageLabelValue) &&
+                             stageLabelValue.ValueKind == JsonValueKind.String
+                ? stageLabelValue.GetString() ?? stage : stage;
+            var progress = root.TryGetProperty("progress", out var progressValue) && progressValue.ValueKind == JsonValueKind.Number
+                ? Math.Clamp(progressValue.GetDouble(), 0, 1) : 0;
+            var frames = root.TryGetProperty("segmentsIndexed", out var segmentsValue) && segmentsValue.ValueKind == JsonValueKind.Number
+                ? segmentsValue.GetInt64() : 0;
+            var completed = root.TryGetProperty("filesCompleted", out var completedValue) && completedValue.ValueKind == JsonValueKind.Number
+                ? completedValue.GetInt32() : 0;
+            var rate = root.TryGetProperty("framesPerSecond", out var rateValue) && rateValue.ValueKind == JsonValueKind.Number
+                ? rateValue.GetDouble() : 0;
+            var workCompleted = root.TryGetProperty("workCompleted", out var workCompletedValue) && workCompletedValue.ValueKind == JsonValueKind.Number
+                ? workCompletedValue.GetInt32() : completed;
+            var workTotal = root.TryGetProperty("workTotal", out var workTotalValue) && workTotalValue.ValueKind == JsonValueKind.Number
+                ? workTotalValue.GetInt32() : 0;
+            var stageCompleted = root.TryGetProperty("stageCompleted", out var stageCompletedValue) && stageCompletedValue.ValueKind == JsonValueKind.Number
+                ? stageCompletedValue.GetInt32() : 0;
+            var stageTotal = root.TryGetProperty("stageTotal", out var stageTotalValue) && stageTotalValue.ValueKind == JsonValueKind.Number
+                ? stageTotalValue.GetInt32() : 0;
             var current = root.TryGetProperty("currentFile", out var file) && file.ValueKind == JsonValueKind.String
                 ? Path.GetFileName(file.GetString()) : "—";
-            var completed = root.TryGetProperty("filesCompleted", out var completedValue) ? completedValue.GetInt32() : 0;
-            var failed = root.TryGetProperty("filesFailed", out var failedValue) ? failedValue.GetInt32() : 0;
-            var eta = root.TryGetProperty("etaSeconds", out var etaValue) ? etaValue.GetDouble() : 0;
+            var failed = root.TryGetProperty("filesFailed", out var failedValue) && failedValue.ValueKind == JsonValueKind.Number
+                ? failedValue.GetInt32() : 0;
+            var eta = root.TryGetProperty("etaSeconds", out var etaValue) && etaValue.ValueKind == JsonValueKind.Number
+                ? etaValue.GetDouble() : 0;
             var updatedUtc = root.TryGetProperty("updatedUtc", out var updatedValue) &&
                              updatedValue.ValueKind == JsonValueKind.String
                 ? updatedValue.GetString() : null;
@@ -108,13 +128,24 @@ public sealed partial class JobsPage : Page
             RealProgress.Value = progress * 100;
             ProgressText.Text = progress.ToString("P1");
             var staleWorkerStatus = running && activeStartedUtc is not null && workerUpdatedUtc < activeStartedUtc;
-            StatusTitleText.Text = staleWorkerStatus ? "正在启动新一轮自动索引" :
+            StatusTitleText.Text = indexControl == "cancelRequested" ? "正在取消索引" :
+                indexControl == "cancelled" || stage == "Cancelled" ? "索引已取消" :
+                paused ? "暂停请求已提交" :
+                staleWorkerStatus ? "正在启动新一轮自动索引" :
                 stage == "Completed" ? "索引已完成" :
                 stage == "Paused" ? "索引已暂停" :
-                stage == "Failed" ? "索引失败" : $"正在索引：{stage}";
-            StatusMessageText.Text = staleWorkerStatus
+                stage == "Failed" ? "索引失败" : $"正在索引：{stageLabel}";
+            StatusMessageText.Text = indexControl == "cancelRequested"
+                ? "正在安全停止当前工作；若后台调用未及时返回，会在几秒内强制结束。"
+                : indexControl == "cancelled" || stage == "Cancelled"
+                    ? "当前索引已停止；已完成的内容会保留。"
+                : paused
+                    ? "暂停请求已提交；当前处理步骤结束后将暂停。"
+                : staleWorkerStatus
                 ? "检测到资源库变化，Worker 正在加载；首份新状态写入后将显示实时进度。"
-                : $"已提交 {frames:N0} 个视觉向量 · {progress:P1}";
+                : workTotal > 0
+                    ? $"总进度 {progress:P1} · 当前 {stageLabel} {stageCompleted:N0}/{stageTotal:N0} · 已完成 {workCompleted:N0}/{workTotal:N0} 项"
+                    : $"总进度 {progress:P1} · 已完成 {frames:N0} 个画面片段";
             ErrorBar.IsOpen = stage == "Failed" && !staleWorkerStatus;
             if (stage == "Failed" && !staleWorkerStatus)
             {
@@ -123,7 +154,7 @@ public sealed partial class JobsPage : Page
                                    errorNode.ValueKind == JsonValueKind.String
                     ? errorNode.GetString() : "请打开状态目录查看日志。";
             }
-            CompletedText.Text = completed.ToString("N0");
+            CompletedText.Text = workTotal > 0 ? $"{workCompleted:N0}/{workTotal:N0}" : completed.ToString("N0");
             FailedText.Text = failed.ToString("N0");
             var remaining = stage == "Paused" ? _etaBaseSeconds :
                 Math.Max(0, _etaBaseSeconds - (DateTimeOffset.UtcNow - _etaBaseUtc).TotalSeconds);
@@ -131,11 +162,14 @@ public sealed partial class JobsPage : Page
                 ? TimeSpan.FromSeconds(remaining).ToString(remaining >= 3600 ? @"h\:mm\:ss" : @"m\:ss")
                 : "—";
             CurrentFileStatus.Text = $"当前文件：{current}";
-            var decoders = root.TryGetProperty("decoderWorkers", out var decoderValue) ? decoderValue.GetInt32() : 1;
             var cuda = root.TryGetProperty("cuda", out var cudaValue) && cudaValue.ValueKind == JsonValueKind.String
                 ? $"CUDA {cudaValue.GetString()}" : "CPU";
-            HardwareStatus.Text = $"硬件：{root.GetProperty("gpu").GetString()} · {cuda} · CPU 线程 {root.GetProperty("cpuThreads").GetInt32()} · 解码器 {decoders} · 批大小 {root.GetProperty("batchSize").GetInt32()}";
-            ThroughputStatus.Text = $"真实吞吐：{rate:N2} 帧/秒（按数据库已提交向量与墙钟时间计算）";
+            var gpu = root.TryGetProperty("gpu", out var gpuValue) && gpuValue.ValueKind == JsonValueKind.String
+                ? gpuValue.GetString() : "GPU 信息暂不可用";
+            HardwareStatus.Text = $"设备：{gpu} · {cuda}";
+            ThroughputStatus.Text = rate > 0.01
+                ? $"实时处理速度：{rate:N1} 帧/秒"
+                : "实时处理速度：正在采样";
         }
         catch (Exception error)
         {
@@ -148,13 +182,18 @@ public sealed partial class JobsPage : Page
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
+        var pause = PauseButton.Content?.ToString() != "继续";
         try
         {
-            var pause = PauseButton.Content?.ToString() != "继续";
+            PauseButton.IsEnabled = false;
+            PauseButton.Content = pause ? "继续" : "暂停";
+            StatusTitleText.Text = pause ? "暂停请求已提交" : "正在继续索引";
+            StatusMessageText.Text = pause ? "当前处理步骤结束后将暂停。" : "正在恢复索引。";
             await AgentClient.RequestAsync(pause ? "index.pause" : "index.resume");
             await RefreshStatusAsync();
         }
         catch (Exception error) { ShowError(error); }
+        finally { PauseButton.IsEnabled = true; }
     }
 
     private async void Cancel_Click(object sender, RoutedEventArgs e)
@@ -169,8 +208,21 @@ public sealed partial class JobsPage : Page
             DefaultButton = ContentDialogButton.Close
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        try { await AgentClient.RequestAsync("index.cancel"); }
+        try
+        {
+            CancelButton.IsEnabled = false;
+            CancelButton.Content = "正在取消…";
+            StatusTitleText.Text = "正在取消索引";
+            StatusMessageText.Text = "正在安全停止当前工作。";
+            await AgentClient.RequestAsync("index.cancel");
+            await RefreshStatusAsync();
+        }
         catch (Exception error) { ShowError(error); }
+        finally
+        {
+            CancelButton.IsEnabled = true;
+            CancelButton.Content = "取消当前任务";
+        }
     }
 
     private async void Rescan_Click(object sender, RoutedEventArgs e)

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import io
-import json
 from pathlib import Path
-import struct
+import json
+import os
+import runpy
+import shutil
 import sys
 import tempfile
 import unittest
@@ -13,50 +14,209 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "worker"))
 
-from mlccs_worker.capabilities import Capabilities, recommend_whisper, require_speech
-from mlccs_worker.contracts import Envelope, WorkerError
-from mlccs_worker.pipe import MAXIMUM_FRAME_BYTES, read_frame, write_frame
-from mlccs_worker.batch_index import _database
+from mlccs_worker.capabilities import (Capabilities, has_v1_vram, recommend_whisper,
+                                       require_speech, require_v1_hardware)
+from mlccs_worker.contracts import WorkerError
+from mlccs_worker.batch_index import (_database, _record_file_failure, _remove_missing_assets,
+                                      _effective_batch_size, _is_visual_current, _iter_scene_windows,
+                                      _segment_sample_ranges, _speech_window_groups)
 from mlccs_worker.search_server import SearchEngine, _phonetic_match
+from mlccs_worker.model_download import _atomic as atomic_model_status
+from mlccs_worker.vector_store import QdrantServer
 
 
 class WorkerTests(unittest.TestCase):
-    def test_framing_round_trip_and_protocol_validation(self):
-        stream = io.BytesIO()
-        request = Envelope.create("worker.health", {"hello": "世界"})
-        write_frame(stream, request)
-        stream.seek(0)
-        self.assertEqual(request, read_frame(stream))
-        bad = request.to_dict(); bad["protocolVersion"] = "2.0"
-        body = json.dumps(bad).encode()
-        with self.assertRaises(WorkerError):
-            read_frame(io.BytesIO(struct.pack("<I", len(body)) + body))
+    def test_model_status_atomic_write_retries_windows_reader_contention(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status = Path(directory) / "status.json"
+            real_replace = os.replace
+            attempts = 0
 
-    def test_oversized_frame_is_rejected(self):
-        with self.assertRaises(WorkerError):
-            read_frame(io.BytesIO(struct.pack("<I", MAXIMUM_FRAME_BYTES + 1)))
+            def replace_after_contention(source, destination):
+                nonlocal attempts
+                attempts += 1
+                if attempts < 3:
+                    raise PermissionError("simulated Windows reader contention")
+                real_replace(source, destination)
+
+            with patch("mlccs_worker.model_download.os.replace", side_effect=replace_after_contention), \
+                 patch("mlccs_worker.model_download.time.sleep"):
+                atomic_model_status(status, {"status": "Downloading"})
+            self.assertEqual(3, attempts)
+            self.assertEqual("Downloading", json.loads(status.read_text())["status"])
+
+    def test_runtime_sitecustomize_finds_source_and_installed_worker_layouts(self):
+        bootstrap = ROOT / "worker" / "runtime-sitecustomize.py"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            layouts = (
+                (root / "source" / "worker" / "python", root / "source" / "worker"),
+                (root / "install" / "components" / "runtime" / "hash", root / "install" / "current" / "worker"),
+            )
+            for runtime, worker in layouts:
+                sitecustomize = runtime / "Lib" / "site-packages" / "sitecustomize.py"
+                sitecustomize.parent.mkdir(parents=True)
+                shutil.copy2(bootstrap, sitecustomize)
+                package = worker / "mlccs_worker"
+                package.mkdir(parents=True)
+                (package / "__init__.py").write_text("", encoding="utf-8")
+                original = list(sys.path)
+                try:
+                    runpy.run_path(str(sitecustomize))
+                    self.assertEqual(str(worker.resolve()), sys.path[0])
+                finally:
+                    sys.path[:] = original
+
+    def test_scene_analysis_enforces_two_to_eight_second_windows(self):
+        samples = [(index * 500, 40.0 if index == 12 else 0.0) for index in range(41)]
+        ranges = _segment_sample_ranges(samples)
+        durations = [(samples[right][0] if right < len(samples) else 20_000) - samples[left][0]
+                     for left, right in ranges]
+        self.assertTrue(all(2_000 <= value <= 8_000 for value in durations))
+        self.assertIn((0, 12), ranges)
+
+    def test_scene_window_streaming_keeps_only_one_bounded_window(self):
+        produced = 0
+        consumed_before_first_yield = None
+
+        def samples():
+            nonlocal produced
+            for index in range(7_201):
+                produced += 1
+                yield index * 500, np.zeros((8, 8, 3), dtype=np.uint8), 0.0
+
+        windows = _iter_scene_windows(samples(), 3_600_000)
+        first = next(windows)
+        consumed_before_first_yield = produced
+        self.assertEqual((0, 8_000), first[:2])
+        self.assertLessEqual(consumed_before_first_yield, 18)
+        self.assertLessEqual(len(first[2]), 4)
+
+    def test_auto_batch_is_capped_for_four_gb_class_gpu(self):
+        four_gb = 4 * 1024**3
+        self.assertEqual(8, _effective_batch_size(0, "adaptive-full", four_gb))
+        self.assertEqual(8, _effective_batch_size(32, "adaptive-full", four_gb))
+        self.assertEqual(4, _effective_batch_size(0, "efficiency", four_gb))
+
+    def test_speech_semantic_windows_are_eight_to_thirty_seconds(self):
+        rows = [(f"s{index}", index * 2_000, (index + 1) * 2_000, f"text {index}")
+                for index in range(17)]
+        windows = _speech_window_groups(rows)
+        self.assertTrue(all(8_000 <= end - start <= 30_000 for start, end, _ in windows))
+        self.assertEqual([row[0] for row in rows], [row[0] for _, _, group in windows for row in group])
 
     def test_speech_requires_cuda_and_recommendation_follows_vram(self):
-        capability = Capabilities("Windows", "CPU", 8, 16, 100, None, False, None, 0, False)
+        capability = Capabilities("10.0.17763", "CPU", 8, 16, 100, None, False, None, 0,
+                                  None, False, ("no NVIDIA",), False)
         with self.assertRaisesRegex(WorkerError, "CUDA"):
             require_speech(capability)
+        with self.assertRaisesRegex(WorkerError, "NVIDIA"):
+            require_v1_hardware(capability)
         self.assertEqual("small", recommend_whisper(3 * 1024**3)["model"])
         self.assertEqual("medium", recommend_whisper(5 * 1024**3)["model"])
-        self.assertEqual("large-v3-turbo", recommend_whisper(8 * 1024**3)["model"])
+        self.assertEqual("medium", recommend_whisper(8 * 1024**3)["model"])
+        self.assertEqual("large-v3", recommend_whisper(12 * 1024**3)["model"])
         self.assertEqual("float16", recommend_whisper(12 * 1024**3)["compute_type"])
 
-    def test_live_catalog_schema_supports_preview_and_timed_text(self):
+    def test_four_gb_class_gpu_allows_driver_reserved_memory(self):
+        self.assertTrue(has_v1_vram(4095 * 1024**2))
+        self.assertTrue(has_v1_vram(3840 * 1024**2))
+        self.assertFalse(has_v1_vram(3839 * 1024**2))
+
+    def test_production_catalog_schema_uses_sqlite_outbox_without_live_tables(self):
         with tempfile.TemporaryDirectory() as directory:
             connection = _database(Path(directory) / "catalog.db")
-            tables = {row[0] for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )}
-            self.assertTrue({"media_assets", "real_visual_frames",
-                             "transcript_segments_live", "ocr_observations_live"} <= tables)
+            try:
+                tables = {row[0] for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )}
+                self.assertTrue({"media_assets", "visual_segments", "transcript_segments",
+                                 "speech_windows", "ocr_observations", "vector_outbox", "search_fts"} <= tables)
+                self.assertFalse({"real_visual_frames", "transcript_segments_live",
+                                  "ocr_observations_live"} & tables)
+            finally:
+                connection.close()
+
+    def test_corrupt_video_is_persisted_as_a_file_level_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            video = root / "损坏视频.mp4"
+            video.write_bytes(b"not-a-video")
+            connection = _database(root / "catalog.db")
+            try:
+                connection.execute("INSERT INTO libraries VALUES(?,?,?,?,?)",
+                                   ("library", "test", str(root), 1, "2026-08-04T00:00:00Z"))
+                connection.commit()
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,status) VALUES('asset','library',?,1,'now','f','video','Indexing')""",
+                                   (str(video),))
+                connection.execute("INSERT INTO visual_segments VALUES('partial','asset',0,1000,'[]','x',1,'m')")
+                _record_file_failure(connection, "library", str(root), video, "asset",
+                                     RuntimeError("decode failed"))
+                self.assertEqual(("Failed", "decode failed", 0), connection.execute(
+                    "SELECT status,error,duration_ms FROM media_assets WHERE asset_id='asset'").fetchone())
+                self.assertEqual("MEDIA_DECODE_FAILED", connection.execute(
+                    "SELECT error_code FROM assets WHERE id='asset'").fetchone()[0])
+                self.assertEqual(0, connection.execute(
+                    "SELECT count(*) FROM visual_segments WHERE asset_id='asset'").fetchone()[0])
+            finally:
+                connection.close()
+
+    def test_unchanged_indexed_asset_is_skipped_only_for_current_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            try:
+                connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\L',1,'now')")
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,status) VALUES('asset','lib','D:\\L\\a.mp4',1,'now','same','video','Indexed')""")
+                connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                    size_bytes,modified_utc,duration_ms,status,visual_version)
+                    VALUES('D:\\L\\a.mp4','asset','D:\\L','a.mp4','.mp4',1,'now',1000,'Indexed','openclip-standard-506d40eb')""")
+                connection.commit()
+                self.assertTrue(_is_visual_current(connection, "asset", "same"))
+                self.assertFalse(_is_visual_current(connection, "asset", "changed"))
+                connection.execute("UPDATE media_assets SET visual_version='old' WHERE asset_id='asset'")
+                self.assertFalse(_is_visual_current(connection, "asset", "same"))
+            finally:
+                connection.close()
+
+    def test_missing_video_removal_queues_vector_deletes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\L',1,'now')")
+            connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                fast_fingerprint,media_kind,status) VALUES('asset','lib','D:\\L\\gone.mp4',1,'now','f','video','Indexed')""")
+            connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                size_bytes,modified_utc,duration_ms,status) VALUES('D:\\L\\gone.mp4','asset','D:\\L','gone.mp4','.mp4',1,'now',1000,'Indexed')""")
+            connection.execute("INSERT INTO visual_segments VALUES('point','asset',0,1000,'[]','x',1,'m')")
+            connection.commit()
+            self.assertEqual(1, _remove_missing_assets(connection, "D:\\L", set(), Path(directory) / "thumbs"))
+            self.assertEqual(("delete", "visual_v1", "point"), connection.execute(
+                "SELECT operation,collection,point_id FROM vector_outbox").fetchone())
+            self.assertEqual(0, connection.execute("SELECT count(*) FROM media_assets").fetchone()[0])
             columns = {row[1] for row in connection.execute("PRAGMA table_info(media_assets)")}
             self.assertTrue({"width", "height", "codec", "thumbnail_path", "visual_version",
                              "speech_version", "ocr_version"} <= columns)
             connection.close()
+
+    def test_qdrant_delete_is_idempotent_when_collection_is_absent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connection = _database(Path(directory) / "catalog.db")
+            connection.execute("""INSERT INTO vector_outbox(
+                operation,collection,point_id,payload_json,created_utc)
+                VALUES('delete','visual_v1','gone','{}','now')""")
+            connection.commit()
+            qdrant = QdrantServer("http://127.0.0.1:1", "test-key")
+            try:
+                with patch.object(qdrant, "collection_exists", return_value=False), \
+                     patch.object(qdrant, "_request") as request:
+                    self.assertEqual(1, qdrant.apply_outbox(connection))
+                    request.assert_not_called()
+                self.assertIsNotNone(connection.execute(
+                    "SELECT completed_utc FROM vector_outbox").fetchone()[0])
+            finally:
+                qdrant.close()
+                connection.close()
 
     def test_chinese_phonetic_expansion_is_bounded_by_level(self):
         self.assertGreater(_phonetic_match("皇帝", "huangdi.mp4", "medium"), 0)
@@ -67,50 +227,72 @@ class WorkerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "catalog.db"
             connection = _database(database)
-            for library, path in (("D:\\A", "D:\\A\\相同名称.mp4"),
-                                  ("D:\\B", "D:\\B\\相同名称.mp4")):
+            for suffix, library, path in (("A", "D:\\A", "D:\\A\\相同名称.mp4"),
+                                          ("B", "D:\\B", "D:\\B\\相同名称.mp4")):
+                library_id = f"library-{suffix}"
+                asset_id = f"asset-{suffix}"
+                connection.execute("INSERT INTO libraries VALUES(?,?,?,?,?)",
+                                   (library_id, suffix, library, 1, "2026-01-01T00:00:00Z"))
+                connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                    fast_fingerprint,media_kind,duration_ms,status) VALUES(?,?,?,?,?,?,?,?,?)""",
+                    (asset_id, library_id, path, 1, "2026-01-01T00:00:00Z", suffix, "video", 1000, "Indexed"))
                 connection.execute(
                     """INSERT INTO media_assets(
-                         media_path,library_root,name,extension,size_bytes,modified_utc,
+                         media_path,asset_id,library_root,name,extension,size_bytes,modified_utc,
                          duration_ms,status)
-                       VALUES(?,?,?,?,?,?,?,?)""",
-                    (path, library, "相同名称.mp4", ".mp4", 1, "2026-01-01T00:00:00Z",
+                       VALUES(?,?,?,?,?,?,?,?,?)""",
+                    (path, asset_id, library, "相同名称.mp4", ".mp4", 1, "2026-01-01T00:00:00Z",
                      1000, "Indexed")
                 )
-                suffix = library[-1]
-                connection.execute(
-                    """INSERT INTO real_visual_frames(
-                         id,run_id,media_path,timestamp_ms,embedding_f16,thumbnail_path,
-                         model_version,device) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"visual-{suffix}", "run", path, 100,
-                     np.array([1.0, 0.0], dtype=np.float16).tobytes(), "",
-                     "openclip-standard-506d40eb", "cpu")
-                )
-                connection.execute(
-                    """INSERT INTO transcript_segments_live(
-                         id,media_path,start_ms,end_ms,text,normalized_text,words_json,
-                         model_version) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"speech-{suffix}", path, 200, 400, "目标台词", "目标台词", "[]", "test")
-                )
-                connection.execute(
-                    """INSERT INTO ocr_observations_live(
-                         id,media_path,timestamp_ms,text,normalized_text,confidence,boxes_json,
-                         model_version) VALUES(?,?,?,?,?,?,?,?)""",
-                    (f"ocr-{suffix}", path, 500, "目标字幕", "目标字幕", 0.9, "[]", "test")
-                )
+                connection.execute("INSERT INTO search_fts VALUES(?,?,?,?,?,?,?)",
+                                   (asset_id, "相同名称.mp4", "目标台词", "目标字幕", "", "", ""))
             connection.commit()
             connection.close()
             # Non-visual search must remain available without loading the large
             # CLIP model; the visual vector is stubbed only for that source.
-            engine = SearchEngine(database, Path(directory) / "models-not-installed")
-            for query, source in (("相同", "filename"), ("画面", "visual"),
-                                  ("目标台词", "speech"), ("目标字幕", "ocr")):
-                if source == "visual":
-                    engine._text_vector = lambda _: np.array([1.0, 0.0], dtype=np.float32)
-                results = engine.search(query, source, 60, "off", "D:\\B")
-                self.assertEqual(["D:\\B\\相同名称.mp4"],
-                                 list(dict.fromkeys(item["path"] for item in results)),
-                                 source)
+            class EmptyQdrant:
+                def collection_exists(self, _name): return False
+                def close(self): pass
+            engine = SearchEngine(database, Path(directory) / "models-not-installed", qdrant=EmptyQdrant())
+            try:
+                for query, source in (("相同", "filename"), ("目标台词", "speech"), ("目标字幕", "ocr")):
+                    results = engine.search(query, source, 60, "off", {"libraries": ["D:\\B"]})
+                    self.assertEqual(["D:\\B\\相同名称.mp4"],
+                                     list(dict.fromkeys(item["path"] for item in results)),
+                                     source)
+                    self.assertIn(f"{source}-fts", results[0]["source"])
+            finally:
+                engine.close()
+
+    def test_visual_hit_uses_thumbnail_nearest_to_the_hit_timestamp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "catalog.db"
+            connection = _database(database)
+            connection.execute("INSERT INTO libraries VALUES('lib','L','D:\\\\L',1,'now')")
+            connection.execute("""INSERT INTO assets(id,library_id,canonical_path,size_bytes,modified_utc,
+                fast_fingerprint,media_kind,duration_ms,status) VALUES('asset','lib','D:\\\\L\\\\a.mp4',1,'now','f','video',20000,'Indexed')""")
+            connection.execute("""INSERT INTO media_assets(media_path,asset_id,library_root,name,extension,
+                size_bytes,modified_utc,duration_ms,status,thumbnail_path)
+                VALUES('D:\\\\L\\\\a.mp4','asset','D:\\\\L','a.mp4','.mp4',1,'now',20000,'Indexed','first.jpg')""")
+            connection.execute("INSERT INTO visual_segments VALUES('first','asset',0,2000,'[]','first.jpg',1,'model')")
+            connection.execute("INSERT INTO visual_segments VALUES('hit','asset',9000,11000,'[]','hit.jpg',1,'model')")
+            connection.commit()
+            connection.close()
+
+            class VisualQdrant:
+                def collection_exists(self, name): return name == "visual_v1"
+                def query(self, *_args):
+                    return [{"score": 0.9, "payload": {"assetId": "asset", "representativeMs": 10_000}}]
+                def close(self): pass
+
+            engine = SearchEngine(database, Path(directory) / "models", qdrant=VisualQdrant())
+            engine._visual_vector = lambda _query: [0.0]  # type: ignore[method-assign]
+            try:
+                results = engine.search("目标", "visual", 10, "off")
+                self.assertEqual("hit.jpg", results[0]["thumbnail"])
+                self.assertEqual(10_000, results[0]["timestampMs"])
+            finally:
+                engine.close()
 
 
 if __name__ == "__main__":

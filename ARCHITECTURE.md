@@ -1,54 +1,19 @@
 # Architecture
 
-## Frozen architecture gate (protocol generation 1)
+MLCCS Video Search v1.0.0 has five process boundaries:
 
-The system has four trust-separated processes. The WinUI UI is a single-instance interactive client. The Agent owns the durable queue, discovery, checkpoints and tray controls. The private-Python Worker owns FFmpeg probing, scene/OCR/audio inference and local Qdrant Edge access. The Updater is invoked only with a verified update plan and performs shutdown, replacement, health check and rollback.
+1. WinUI UI: interactive browsing, search, playback, settings, and explicit update decisions.
+2. Agent: single-instance named-pipe authority for configuration, hardware gating, job lifecycle, Worker/Qdrant processes, status, and local logs.
+3. Private Python Workers: one indexing process and one lazily started search process. Only these load ML models.
+4. Qdrant Server v1.18.3: a private component bound to a dynamic `127.0.0.1` port with a per-install API key. The Agent starts, health-checks, restarts, and stops it.
+5. External Updater: stored outside `current`, re-verifies the signed Manifest, stages the app core, requests safe shutdown, atomically swaps `current/previous`, health-checks, and rolls back.
 
-All process communication uses Windows named pipes scoped to the current user. The pipe security descriptor admits only the owning SID and LocalSystem. Messages are UTF-8 JSON frames prefixed by a 32-bit little-endian byte count, limited to 1 MiB. Every envelope carries `protocolVersion`, `requestId`, optional `taskId`, UTC timestamp, stage, progress, recoverability and a stable error. Unknown additive fields are ignored; a different major protocol is rejected with `IPC_PROTOCOL_INCOMPATIBLE`.
+SQLite is authoritative for libraries, canonical paths, source text, FTS5, segments, index-run state, and the vector Outbox. A metadata/vector change first commits to SQLite. Qdrant success then marks the Outbox row complete. Missing Qdrant collections reset their authoritative Outbox rows for deterministic rebuild.
 
-```mermaid
-flowchart LR
-  UI["WinUI 3 UI"] <-->|"user-scoped named pipe"| Agent["Index Agent + tray"]
-  Agent <-->|"user-scoped named pipe"| Worker["Private Python ML Worker"]
-  Updater["Updater"] -->|"coordinated shutdown / health check"| UI
-  Updater --> Agent
-  Agent --> SQLite[("SQLite + FTS5")]
-  Worker --> Qdrant[("Qdrant Edge")]
-  Worker --> Models[("Pinned models + private tools")]
-```
+Qdrant payloads are deliberately limited to asset/segment IDs, times, and algorithm/model versions. Paths, filenames, queries, transcripts, OCR text, and confidence values never enter Qdrant. Its endpoint and API key are delivered to child processes without command-line arguments and are not written to logs.
 
-## Storage and recovery
+The indexing pipeline loads one model family at a time: OpenCLIP, optional Whisper, optional OCR, then required BGE. Each stage releases the previous model before the next begins. A corrupt video is recorded as a file-scoped failure.
 
-`catalog.db` is authoritative for assets, streams, libraries, jobs, checkpoints, segments, transcripts, OCR, model/index versions, settings, failures and migrations. FTS5 contains filename, normalized text, pinyin, initials and fuzzy-phonetic fields. Qdrant collections are derived stores keyed by deterministic segment IDs. A committed SQLite outbox records vector upserts/deletes; recovery replays it idempotently. This avoids a distributed transaction between SQLite and Qdrant.
+The search Worker is terminated after the configured 5/10/30 minute idle timeout, never while a query is running. When neither indexing nor search needs Qdrant, the Agent stops Qdrant too. Operating-system process teardown is the memory/VRAM release boundary.
 
-Jobs lease one item at a time. A lease has an owner, expiry and monotonic attempt count. On restart, expired `running` items return to `queued`; completed checkpoints are never recomputed unless input fingerprint or algorithm/model version changed. Retry policy is bounded and error-code based. OOM reduces a batch once per attempt and ultimately creates a recoverable failure rather than an infinite loop.
-
-Asset identity uses canonical volume-aware path plus size, modified time and a fast first/middle/last-block fingerprint. Full SHA-256 resolves suspected duplicates. Directory traversal records file IDs to prevent reparse-point cycles. Offline roots are marked unavailable and are not interpreted as deletions.
-
-## Index algorithms
-
-Visual candidates are detected at approximately 2 FPS, threshold 27. Windows are clamped to 2–8 seconds; longer scenes are subdivided. Every window has a midpoint frame and high-motion windows add a second representative. Whisper preserves original VAD segments and word timestamps; adjacent originals may form 8–30 second semantic windows with explicit original-ID mappings. OCR runs on representative/subtitle-change frames and stores text, normalized form, confidence, timestamp and bounding boxes.
-
-Search runs independent filename FTS, text-to-visual, transcript semantic, OCR text/vector and optional phonetic recall. Reciprocal Rank Fusion uses `1/(60+rank)`, source weights and an exact-match boost. Contributions are retained for the explanation. Phonetic expansion is local, capped at eight candidates and never overwrites the transcript.
-
-## Lifecycle boundaries
-
-Closing the UI does not stop the Agent. Explicit Agent exit drains the current atomic checkpoint and stops the Worker. Search stays disabled until every initial asset has reached completed, skipped or user-confirmed-failed. Without CUDA, the Agent rejects any speech job with `CAPABILITY_SPEECH_REQUIRES_CUDA`, regardless of settings provenance.
-
-The Updater downloads to a versioned staging directory, verifies manifest signature, archive hash and archive signature, checks disk capacity and database compatibility, then asks all processes to exit. It renames the current version to `previous`, atomically promotes staging, launches a health probe and rolls back on timeout/failure. It never silently installs or restarts.
-
-## Version table
-
-| Contract | Version |
-|---|---:|
-| IPC envelope | 1.0 |
-| settings schema | 1 |
-| model/dependency manifest | 1 |
-| update manifest | 1 |
-| diagnostics report | 1 |
-| SQLite schema | 1 |
-| visual segmentation | 1 |
-| speech window mapping | 1 |
-| OCR normalization | 1 |
-| ranking | 1 |
-
+Product version `1.0.0` is independent from IPC/schema protocol `1.0`. Network activity is limited to signed component/model downloads and enabled/manual update checks. There is no diagnostics upload or telemetry surface in v1.

@@ -9,33 +9,51 @@
                     PlaceholderText="搜索文件名、视频画面、语音或画面文字"
                     QuerySubmitted="QueryBox_QuerySubmitted"
                     AutomationProperties.Name="搜索本地媒体"/>
-    <Grid Grid.Row="2" ColumnSpacing="12">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition/>
-        <ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
-      <ComboBox x:Name="SourceSelector" Header="搜索来源" SelectedIndex="0" MinWidth="180">
-        <ComboBoxItem Content="全部来源" Tag="all"/>
-        <ComboBoxItem Content="仅文件名" Tag="filename"/>
-        <ComboBoxItem Content="仅视频画面" Tag="visual"/>
-        <ComboBoxItem Content="仅语音" Tag="speech"/>
-        <ComboBoxItem Content="仅画面文字" Tag="ocr"/>
-      </ComboBox>
-      <ComboBox x:Name="LibrarySelector" Grid.Column="1" Header="资源文件夹"
-                SelectedIndex="0" MinWidth="260" MaxWidth="420"
-                AutomationProperties.Name="按资源文件夹过滤搜索"/>
-      <Grid Grid.Column="2" VerticalAlignment="Bottom">
-        <TextBlock x:Name="SearchStateText" Text="正在检查索引状态"
-                   TextWrapping="Wrap" Opacity="0.72" VerticalAlignment="Center"/>
-        <InfoBar x:Name="SearchStatus" IsOpen="False"/>
+    <StackPanel Grid.Row="2" Spacing="10">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <ComboBox x:Name="SourceSelector" Header="搜索来源" SelectedIndex="0" MinWidth="150">
+            <ComboBoxItem Content="全部来源" Tag="all"/><ComboBoxItem Content="仅文件名" Tag="filename"/>
+            <ComboBoxItem Content="仅视频画面" Tag="visual"/><ComboBoxItem Content="仅语音" Tag="speech"/>
+            <ComboBoxItem Content="仅画面文字" Tag="ocr"/>
+          </ComboBox>
+          <ComboBox x:Name="LibrarySelector" Header="资源文件夹" SelectedIndex="0" MinWidth="220" MaxWidth="360"
+                    AutomationProperties.Name="按资源文件夹过滤搜索"/>
+          <ComboBox x:Name="ExtensionSelector" Header="格式" SelectedIndex="0" MinWidth="105">
+            <ComboBoxItem Content="全部" Tag=""/><ComboBoxItem Content="MP4" Tag=".mp4"/><ComboBoxItem Content="MKV" Tag=".mkv"/>
+            <ComboBoxItem Content="MOV" Tag=".mov"/><ComboBoxItem Content="AVI" Tag=".avi"/><ComboBoxItem Content="WMV" Tag=".wmv"/>
+            <ComboBoxItem Content="M4V" Tag=".m4v"/><ComboBoxItem Content="TS" Tag=".ts"/><ComboBoxItem Content="WebM" Tag=".webm"/>
+          </ComboBox>
+          <ComboBox x:Name="DurationSelector" Header="时长" SelectedIndex="0" MinWidth="125">
+            <ComboBoxItem Content="不限" Tag="any"/><ComboBoxItem Content="1 分钟内" Tag="short"/>
+            <ComboBoxItem Content="1–10 分钟" Tag="medium"/><ComboBoxItem Content="10 分钟以上" Tag="long"/>
+          </ComboBox>
+          <ComboBox x:Name="DateSelector" Header="修改日期" SelectedIndex="0" MinWidth="130">
+            <ComboBoxItem Content="不限" Tag="any"/><ComboBoxItem Content="最近 7 天" Tag="7"/>
+            <ComboBoxItem Content="最近 30 天" Tag="30"/><ComboBoxItem Content="最近一年" Tag="365"/>
+          </ComboBox>
+          <ComboBox x:Name="StatusSelector" Header="索引状态" SelectedIndex="0" MinWidth="120">
+            <ComboBoxItem Content="全部" Tag=""/><ComboBoxItem Content="已索引" Tag="Indexed"/>
+            <ComboBoxItem Content="失败" Tag="Failed"/><ComboBoxItem Content="索引中" Tag="Indexing"/>
+          </ComboBox>
+          <ComboBox x:Name="SortSelector" Header="排序" SelectedIndex="0" MinWidth="130">
+            <ComboBoxItem Content="相关度" Tag="relevance"/><ComboBoxItem Content="最近修改" Tag="modified-desc"/>
+            <ComboBoxItem Content="文件名" Tag="filename"/>
+          </ComboBox>
+        </StackPanel>
+      </ScrollViewer>
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <Grid VerticalAlignment="Center">
+          <TextBlock x:Name="SearchStateText" Text="正在检查索引状态" TextWrapping="Wrap" Opacity="0.72"/>
+          <InfoBar x:Name="SearchStatus" IsOpen="False"/>
+        </Grid>
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <ToggleButton x:Name="ResultListButton" Content="列表" IsChecked="True" Click="ResultList_Click"/>
+          <ToggleButton x:Name="ResultGridButton" Content="网格" Click="ResultGrid_Click"/>
+        </StackPanel>
       </Grid>
-      <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
-        <ToggleButton x:Name="ResultListButton" Content="列表" IsChecked="True" Click="ResultList_Click"/>
-        <ToggleButton x:Name="ResultGridButton" Content="网格" Click="ResultGrid_Click"/>
-      </StackPanel>
-    </Grid>
+    </StackPanel>
     <Grid Grid.Row="3">
       <ListView x:Name="ResultList" ItemsSource="{x:Bind Results, Mode=OneWay}" SelectionMode="Single"
                 IsItemClickEnabled="True" ItemClick="Result_ItemClick" AutomationProperties.Name="搜索结果列表">

@@ -1,9 +1,8 @@
 {
   "schemaVersion": 1,
   "collections": [
-    { "name": "visual_v1", "distance": "Cosine", "vectorDimensionFromModel": "openclip.active", "payload": ["assetId", "segmentId", "startMs", "endMs", "representativeMs", "thumbnail", "algorithmVersion", "modelVersion"] },
-    { "name": "speech_v1", "distance": "Cosine", "vectorDimensionFromModel": "bge.active", "payload": ["assetId", "semanticWindowId", "originalSegmentIds", "startMs", "endMs", "algorithmVersion", "modelVersion"] },
-    { "name": "ocr_v1", "distance": "Cosine", "vectorDimensionFromModel": "bge.active", "payload": ["assetId", "ocrId", "timestampMs", "confidence", "algorithmVersion", "modelVersion"] }
+    { "name": "visual_v1", "distance": "Cosine", "vectorDimensionFromModel": "openclip.active", "payload": ["assetId", "segmentId", "startMs", "endMs", "representativeMs", "algorithmVersion", "modelVersion"] },
+    { "name": "speech_v1", "distance": "Cosine", "vectorDimensionFromModel": "bge.active", "payload": ["assetId", "semanticWindowId", "startMs", "endMs", "algorithmVersion", "modelVersion"] },
+    { "name": "ocr_v1", "distance": "Cosine", "vectorDimensionFromModel": "bge.active", "payload": ["assetId", "ocrId", "timestampMs", "algorithmVersion", "modelVersion"] }
   ]
 }
-

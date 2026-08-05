@@ -2,9 +2,9 @@
 
 These instructions start from a clean x64 Windows 10/11 machine with no Python, Git, FFmpeg, Visual Studio or .NET SDK. Run commands from an ordinary PowerShell window unless a command explicitly triggers elevation.
 
-## 1. Verify the handoff
+## 1. Prepare an isolated source tree
 
-The final `WINDOWS_HANDOFF.md` contains the actual URL, byte size and SHA-256. Download into `D:\MLCCSapps`, verify, then expand into exactly `D:\MLCCSapps\MLCCS-VideoSearch-FromScratch`. Do not inspect or use any other video-search program on that machine.
+Use a clean checkout of the frozen release candidate. Keep source, tools, caches, and outputs in an isolated non-system directory such as `D:\MLCCS-VideoSearch-v1`. Record the commit SHA before building.
 
 ## 2. Install the build toolchain
 
@@ -26,7 +26,7 @@ Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.*' -ErrorAc
 
 ## 3. Assemble the private runtime
 
-`worker/manifests/dependencies.lock.json` pins the CPython embeddable runtime and all 137 resolved wheels by exact URL, byte size and SHA-256. The bundled GPUtil wheel is pure Python and was built from the pinned 1.4.0 source. Run:
+`worker/manifests/dependencies.lock.json` pins the CPython embeddable runtime and all 143 resolved artifacts by exact URL, byte size and SHA-256. The bundled GPUtil wheel is pure Python and was built from the pinned 1.4.0 source. Run:
 
 ```powershell
 & .\scripts\Build-PrivateRuntime.ps1
@@ -35,12 +35,10 @@ Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.*' -ErrorAc
 Do not install system Python. The result is `worker\python\python.exe`. Verify offline imports:
 
 ```powershell
-& .\worker\python\python.exe -c "import torch, open_clip, faster_whisper, paddleocr, qdrant_edge; print('private runtime ok')"
+& .\worker\python\python.exe -c "import torch, open_clip, faster_whisper, paddleocr, requests; print('private runtime ok')"
 ```
 
-CUDA Toolkit is not required. Torch carries its user-mode CUDA dependencies; a compatible NVIDIA driver is still required for speech indexing.
-
-FFmpeg/ffprobe and libVLC are application-private dependencies. Their entries are handled by the same verified dependency staging flow before portable release; never use binaries found on `PATH` for the release.
+CUDA Toolkit is not required. Torch carries its user-mode CUDA dependencies; a compatible NVIDIA driver is required for all indexing and search. Video decoding uses the locked PyAV runtime and playback uses Windows media controls.
 
 ## 4. Overall compilation gate
 
@@ -60,4 +58,3 @@ This restores and compiles UI, Agent, Updater, Core, XAML/WinUI resources and th
 - Private runtime: `worker\python`
 
 No successful macOS build or `EnableWindowsTargeting` result counts as a Windows runtime pass.
-

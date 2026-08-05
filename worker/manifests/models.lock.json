@@ -136,7 +136,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 1464635263
     },
@@ -152,7 +152,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 315
     },
@@ -168,7 +168,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 9096718
     },
@@ -184,7 +184,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 10737418240,
       "diskBytes": 4772387963
     },
@@ -200,7 +200,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 10737418240,
       "diskBytes": 315
     },
@@ -216,7 +216,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 10737418240,
       "diskBytes": 9096718
     },
@@ -232,7 +232,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 190
     },
@@ -248,7 +248,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 776
     },
@@ -264,7 +264,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 124
     },
@@ -280,7 +280,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 95827648
     },
@@ -296,7 +296,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 349
     },
@@ -312,7 +312,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 95842633
     },
@@ -328,7 +328,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 52
     },
@@ -344,7 +344,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 125
     },
@@ -360,7 +360,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 439125
     },
@@ -376,7 +376,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 367
     },
@@ -392,7 +392,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 512,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 109540
     },
@@ -408,7 +408,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 190
     },
@@ -424,7 +424,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 998
     },
@@ -440,7 +440,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 124
     },
@@ -456,7 +456,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 349
     },
@@ -472,7 +472,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 409138989
     },
@@ -488,7 +488,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 52
     },
@@ -504,7 +504,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 125
     },
@@ -520,7 +520,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 439124
     },
@@ -536,7 +536,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 366
     },
@@ -552,7 +552,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 768,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 109540
     },
@@ -568,7 +568,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 191
     },
@@ -584,7 +584,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 1000
     },
@@ -600,7 +600,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 124
     },
@@ -616,7 +616,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 349
     },
@@ -632,7 +632,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 1302220525
     },
@@ -648,7 +648,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 52
     },
@@ -664,7 +664,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 125
     },
@@ -680,7 +680,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 439124
     },
@@ -696,7 +696,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 394
     },
@@ -712,7 +712,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": 1024,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 109540
     },
@@ -728,7 +728,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 2249
     },
@@ -744,7 +744,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 75538270
     },
@@ -760,7 +760,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 2203239
     },
@@ -776,7 +776,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 459861
     },
@@ -792,7 +792,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 2309
     },
@@ -808,7 +808,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 145217532
     },
@@ -824,7 +824,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 2203239
     },
@@ -840,7 +840,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 2147483648,
       "diskBytes": 459861
     },
@@ -856,7 +856,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 3221225472,
       "diskBytes": 2370
     },
@@ -872,7 +872,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 3221225472,
       "diskBytes": 483546902
     },
@@ -888,7 +888,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 3221225472,
       "diskBytes": 2203239
     },
@@ -904,7 +904,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 3221225472,
       "diskBytes": 459861
     },
@@ -920,7 +920,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 2257
     },
@@ -936,7 +936,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 1527906378
     },
@@ -952,7 +952,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 2203239
     },
@@ -968,7 +968,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 459861
     },
@@ -984,7 +984,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 6442450944,
       "diskBytes": 2263
     },
@@ -1000,7 +1000,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 6442450944,
       "diskBytes": 1617884929
     },
@@ -1016,7 +1016,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 6442450944,
       "diskBytes": 340
     },
@@ -1032,7 +1032,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 6442450944,
       "diskBytes": 2710337
     },
@@ -1048,7 +1048,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 6442450944,
       "diskBytes": 1068114
     },
@@ -1064,7 +1064,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 12884901888,
       "diskBytes": 2394
     },
@@ -1080,7 +1080,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 12884901888,
       "diskBytes": 3087284237
     },
@@ -1096,7 +1096,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 12884901888,
       "diskBytes": 340
     },
@@ -1112,7 +1112,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 12884901888,
       "diskBytes": 2480617
     },
@@ -1128,7 +1128,7 @@
       "fallbackUrls": [],
       "license": "MIT",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 12884901888,
       "diskBytes": 1068114
     },
@@ -1144,7 +1144,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 2871
     },
@@ -1160,7 +1160,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 229777
     },
@@ -1176,7 +1176,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 4692937
     },
@@ -1192,7 +1192,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 903
     },
@@ -1208,7 +1208,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 352253
     },
@@ -1224,7 +1224,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 217724
     },
@@ -1240,7 +1240,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 16458665
     },
@@ -1256,7 +1256,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 0,
       "diskBytes": 148345
     },
@@ -1272,7 +1272,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 2871
     },
@@ -1288,7 +1288,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 402480
     },
@@ -1304,7 +1304,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 87932887
     },
@@ -1320,7 +1320,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 903
     },
@@ -1336,7 +1336,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 352253
     },
@@ -1352,7 +1352,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 325204
     },
@@ -1368,7 +1368,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 84390117
     },
@@ -1384,7 +1384,7 @@
       "fallbackUrls": [],
       "license": "Apache-2.0",
       "vectorDimension": null,
-      "minimumWorkerVersion": "0.1.0",
+      "minimumWorkerVersion": "1.0.0",
       "recommendedVramBytes": 4294967296,
       "diskBytes": 148345
     }

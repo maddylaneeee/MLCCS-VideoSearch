@@ -57,7 +57,7 @@ def main() -> int:
                 "id": f"{model['id']}-{file_count:03d}", "kind": model["kind"], "version": commit,
                 "filename": flat, "installPath": f"{model['id']}/{remote_path}", "size": size,
                 "sha256": sha256, "primaryUrl": resolve, "fallbackUrls": [], "license": model["license"],
-                "vectorDimension": model["vectorDimension"], "minimumWorkerVersion": "0.1.0",
+                "vectorDimension": model["vectorDimension"], "minimumWorkerVersion": "1.0.0",
                 "recommendedVramBytes": model["recommendedVramBytes"], "diskBytes": size,
             })
             file_count += 1

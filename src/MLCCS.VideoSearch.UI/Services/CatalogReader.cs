@@ -12,8 +12,6 @@ internal static class CatalogReader
 {
     private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".m4v", ".ts", ".webm" };
-    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff", ".heic" };
     private static readonly ConcurrentDictionary<string, DateTimeOffset> ThumbnailRetryAfter =
         new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, Task<string?>> ThumbnailTasks =
@@ -35,7 +33,7 @@ internal static class CatalogReader
                     foreach (var path in Directory.EnumerateFiles(library, "*", SearchOption.AllDirectories))
                     {
                         var extension = Path.GetExtension(path);
-                        if (!VideoExtensions.Contains(extension) && !ImageExtensions.Contains(extension)) continue;
+                        if (!VideoExtensions.Contains(extension)) continue;
                         if (byPath.ContainsKey(path)) continue;
                         try
                         {
@@ -48,8 +46,7 @@ internal static class CatalogReader
                                 Extension = extension,
                                 SizeBytes = info.Length,
                                 DurationMs = 0,
-                                Status = VideoExtensions.Contains(extension) ? "等待索引" : "资源库图片",
-                                ThumbnailPath = ImageExtensions.Contains(extension) ? path : null
+                                Status = "等待索引"
                             };
                         }
                         catch (IOException) { }
@@ -89,9 +86,9 @@ internal static class CatalogReader
             command.CommandText = """
                 SELECT media_path,name,library_root,extension,size_bytes,duration_ms,status,
                        COALESCE(thumbnail_path,
-                         (SELECT thumbnail_path FROM real_visual_frames frame
-                          WHERE frame.media_path=media_assets.media_path
-                          ORDER BY timestamp_ms LIMIT 1))
+                         (SELECT thumbnail_path FROM visual_segments segment
+                          WHERE segment.asset_id=media_assets.asset_id
+                          ORDER BY start_ms LIMIT 1))
                 FROM media_assets WHERE status!='Missing' ORDER BY name COLLATE NOCASE
                 """;
             await using var reader = await command.ExecuteReaderAsync();

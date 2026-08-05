@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.IO.Compression;
 using MLCCS.VideoSearch.OnlineInstaller;
+using MLCCS.VideoSearch.Core.Updates;
 
 var testRoot = Path.Combine(
     Directory.Exists(@"R:\") ? @"R:\" : Path.GetTempPath(),
@@ -11,6 +13,61 @@ Directory.CreateDirectory(testRoot);
 
 try
 {
+    if (!SystemPrerequisites.IsAllowedMicrosoftDownloadHost("aka.ms") ||
+        !SystemPrerequisites.IsAllowedMicrosoftDownloadHost("download.visualstudio.microsoft.com") ||
+        SystemPrerequisites.IsAllowedMicrosoftDownloadHost("aka.ms.example.invalid") ||
+        SystemPrerequisites.IsAllowedMicrosoftDownloadHost("microsoft.com.example.invalid"))
+    {
+        throw new InvalidOperationException("Microsoft prerequisite download host allowlist is unsafe.");
+    }
+    if (!SystemPrerequisites.IsSupportedWindowsClient(
+            new Version(10, 0, 17763), "Windows 10 Enterprise LTSC", "Client") ||
+        SystemPrerequisites.IsSupportedWindowsClient(
+            new Version(10, 0, 20348), "Windows Server 2022", "Server") ||
+        SystemPrerequisites.IsSupportedWindowsClient(
+            new Version(10, 0, 17134), "Windows 10", "Client"))
+    {
+        throw new InvalidOperationException("Windows client/server/build prerequisite classification failed.");
+    }
+
+    var prerequisiteReport = SystemPrerequisites.Inspect();
+    if (!prerequisiteReport.CanInstall)
+    {
+        throw new InvalidOperationException(
+            "Installer prerequisite inspection rejected the Windows acceptance host: " +
+            prerequisiteReport.Describe());
+    }
+    var prerequisiteDownload = Path.Combine(testRoot, "vc_redist.x64.exe");
+    using (var prerequisiteHttp = InstallerForm.CreateHttpClient())
+    {
+        await SystemPrerequisites.DownloadMicrosoftExecutableAsync(
+            prerequisiteHttp,
+            SystemPrerequisites.VisualCppDownloadUrl,
+            prerequisiteDownload,
+            80L * 1024 * 1024,
+            _ => { },
+            CancellationToken.None);
+    }
+    AuthenticodeVerifier.RequireTrustedPublisher(prerequisiteDownload, "Microsoft Corporation");
+    var replacedPrerequisite = Path.Combine(testRoot, "replaced-vc-redist.exe");
+    File.Copy(prerequisiteDownload, replacedPrerequisite);
+    await using (var replaced = new FileStream(replacedPrerequisite, FileMode.Open, FileAccess.ReadWrite))
+    {
+        replaced.Position = Math.Max(0, replaced.Length / 2);
+        var original = replaced.ReadByte();
+        replaced.Position--;
+        replaced.WriteByte((byte)(original ^ 0x5a));
+    }
+    try
+    {
+        AuthenticodeVerifier.RequireTrustedPublisher(replacedPrerequisite, "Microsoft Corporation");
+        throw new InvalidOperationException("Replaced prerequisite executable was accepted.");
+    }
+    catch (CryptographicException)
+    {
+        // Expected: WinVerifyTrust must reject any byte replacement.
+    }
+
     var payload = new byte[24 * 1024 * 1024];
     for (var index = 0; index < payload.Length; index++)
     {
@@ -129,6 +186,33 @@ try
         throw new InvalidOperationException("Non-Range compatibility download SHA-256 mismatch.");
     }
 
+    var unsafeArchive = Path.Combine(testRoot, "unsafe.zip");
+    using (var archive = ZipFile.Open(unsafeArchive, ZipArchiveMode.Create))
+    {
+        var entry = archive.CreateEntry("../escape.txt");
+        await using var stream = entry.Open();
+        await stream.WriteAsync("unsafe"u8.ToArray());
+    }
+    try
+    {
+        await InstallerForm.ExtractArchiveAsync(unsafeArchive, Path.Combine(testRoot, "extract"),
+            new PauseController(), CancellationToken.None, new Progress<ItemProgress>());
+        throw new InvalidOperationException("Path-traversal archive was accepted.");
+    }
+    catch (InvalidDataException) { }
+
+    var verifiedRoot = Path.Combine(testRoot, "verified");
+    Directory.CreateDirectory(verifiedRoot);
+    await File.WriteAllTextAsync(Path.Combine(verifiedRoot, "payload.txt"), "verified");
+    try
+    {
+        await InstallerForm.VerifyFilesAsync(verifiedRoot,
+            [new ReleaseFile("payload.txt", 8, new string('0', 64))], new PauseController(),
+            CancellationToken.None, new Progress<ItemProgress>());
+        throw new InvalidOperationException("Altered extracted file was accepted.");
+    }
+    catch (InvalidDataException) { }
+
     serverCancellation.Cancel();
     try
     {
@@ -144,6 +228,12 @@ try
     Console.WriteLine("PASS pause-resume");
     Console.WriteLine("PASS background-sha256");
     Console.WriteLine("PASS non-range-fallback");
+    Console.WriteLine("PASS path-traversal-rejection");
+    Console.WriteLine("PASS extracted-file-hash-rejection");
+    Console.WriteLine("PASS bare-windows-prerequisite-inspection");
+    Console.WriteLine("PASS microsoft-download-host-allowlist");
+    Console.WriteLine("PASS microsoft-vc-redist-authenticode");
+    Console.WriteLine("PASS replaced-prerequisite-rejection");
     Console.WriteLine($"RESUMED_FROM={resumedFrom}");
     Console.WriteLine($"SHA256={actualHash}");
 }

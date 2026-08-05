@@ -2,15 +2,17 @@
   "schemaVersion": 1,
   "errors": {
     "IPC_PROTOCOL_INCOMPATIBLE": "Update all MLCCS Video Search components to the same version.",
-    "IPC_FRAME_TOO_LARGE": "Restart the affected component and preserve its diagnostic report.",
+    "IPC_FRAME_TOO_LARGE": "Restart the affected component and preserve its redacted local log.",
+    "IPC_INVALID_ENVELOPE": "Restart the affected component and install the matching application version.",
+    "CAPABILITY_UNSUPPORTED_HARDWARE": "Use Windows 10 1809 or newer with a supported NVIDIA GPU, at least 4 GB VRAM, and a compatible driver.",
     "CAPABILITY_SPEECH_REQUIRES_CUDA": "Use a supported NVIDIA CUDA driver or disable speech indexing.",
+    "MODEL_DOWNLOAD_FAILED": "Check the network and retry the signed component download.",
+    "DOWNLOAD_CANCELLED": "Resume the component download when ready.",
     "MODEL_HASH_MISMATCH": "Discard the partial file and retry a trusted mirror.",
     "MODEL_DISK_FULL": "Choose a storage location with more free space.",
     "INDEX_MEDIA_UNAVAILABLE": "Reconnect the library drive and resume the task.",
     "INDEX_RETRY_EXHAUSTED": "Review the item error and retry manually after correcting the cause.",
     "UPDATE_SIGNATURE_INVALID": "Do not install this update; retain the current version.",
-    "UPDATE_ROLLBACK_COMPLETED": "The prior version was restored after the new version failed its health check.",
-    "DIAGNOSTIC_CONSENT_REQUIRED": "Review the collection and explicitly approve upload.",
-    "DIAGNOSTIC_REDACTION_FAILED": "Save locally and review; the report was not uploaded."
+    "UPDATE_ROLLBACK_COMPLETED": "The prior version was restored after the new version failed its health check."
   }
 }

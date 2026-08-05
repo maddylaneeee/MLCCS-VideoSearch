@@ -53,7 +53,7 @@ public sealed partial class SettingsPage : Page
         // SelectedIndex is applied while InitializeComponent is still constructing named panels.
         if (!_initialized) return;
         foreach (var panel in new FrameworkElement[]
-                 { GeneralPanel, LibrariesPanel, IndexPanel, ModelsPanel, PerformancePanel, SearchPanel, StoragePanel, DiagnosticsPanel, AboutPanel })
+                 { GeneralPanel, LibrariesPanel, IndexPanel, ModelsPanel, SearchPanel, StoragePanel, DiagnosticsPanel, AboutPanel })
             panel.Visibility = Visibility.Collapsed;
         var tag = (CategoryList.SelectedItem as ListViewItem)?.Tag?.ToString() ?? "general";
         (tag switch
@@ -61,7 +61,6 @@ public sealed partial class SettingsPage : Page
             "libraries" => LibrariesPanel,
             "index" => IndexPanel,
             "models" => ModelsPanel,
-            "performance" => PerformancePanel,
             "search" => SearchPanel,
             "storage" => StoragePanel,
             "diagnostics" => DiagnosticsPanel,
@@ -93,12 +92,11 @@ public sealed partial class SettingsPage : Page
             SpeechEconomyRadio.IsChecked = _speechModel == "whisper-small";
             SpeechHighRadio.IsChecked = _speechModel == "whisper-large-v3";
             SpeechRecommendedRadio.IsChecked = _speechModel is not ("whisper-small" or "whisper-large-v3");
-            HelpImproveToggle.IsOn = settings.GetProperty("helpImprove").GetBoolean();
             AutomaticUpdatesToggle.IsOn = settings.GetProperty("automaticUpdates").GetBoolean();
-            var policy = settings.GetProperty("resourcePolicy").GetString();
-            EfficiencyRadio.IsChecked = policy == "efficiency";
-            BalancedRadio.IsChecked = policy == "balanced";
-            FullRadio.IsChecked = policy is not ("efficiency" or "balanced");
+            var idle = settings.TryGetProperty("searchModelIdleMinutes", out var idleNode) ? idleNode.GetInt32() : 10;
+            Idle5Radio.IsChecked = idle == 5;
+            Idle30Radio.IsChecked = idle == 30;
+            Idle10Radio.IsChecked = idle is not (5 or 30);
             var phonetic = settings.GetProperty("phoneticExpansion").GetString();
             PhoneticOff.IsChecked = phonetic == "off";
             PhoneticLow.IsChecked = phonetic == "low";
@@ -116,15 +114,15 @@ public sealed partial class SettingsPage : Page
     private void AttachImmediateSaveHandlers()
     {
         foreach (var toggle in new[]
-                 { AutoStartToggle, AutoIndexNewFilesToggle, HelpImproveToggle, AutomaticUpdatesToggle })
+                 { AutoStartToggle, AutoIndexNewFilesToggle, AutomaticUpdatesToggle })
             toggle.Toggled += SettingChanged;
         foreach (var check in new[] { FilenameCheck, VisualCheck, SpeechCheck, OcrCheck })
             check.Click += SettingChanged;
         foreach (var radio in new[]
                  {
                      SpeechEconomyRadio, SpeechRecommendedRadio, SpeechHighRadio,
-                     EfficiencyRadio, BalancedRadio, FullRadio,
-                     PhoneticOff, PhoneticLow, PhoneticMedium, PhoneticHigh
+                     PhoneticOff, PhoneticLow, PhoneticMedium, PhoneticHigh,
+                     Idle5Radio, Idle10Radio, Idle30Radio
                  })
             radio.Checked += SettingChanged;
     }
@@ -190,8 +188,6 @@ public sealed partial class SettingsPage : Page
         SaveStatus.Text = "正在保存…";
         try
         {
-            var resourcePolicy = EfficiencyRadio.IsChecked == true ? "efficiency" :
-                BalancedRadio.IsChecked == true ? "balanced" : "adaptive-full";
             var phonetic = PhoneticOff.IsChecked == true ? "off" :
                 PhoneticLow.IsChecked == true ? "low" :
                 PhoneticHigh.IsChecked == true ? "high" : "medium";
@@ -202,18 +198,14 @@ public sealed partial class SettingsPage : Page
                 libraries = _libraries,
                 autoStart = AutoStartToggle.IsOn,
                 autoIndexNewFiles = AutoIndexNewFilesToggle.IsOn,
-                intervalSeconds = 4.0,
-                batchSize = 0,
-                decoderWorkers = 0,
-                resourcePolicy,
-                filename = FilenameCheck.IsChecked == true,
-                visual = VisualCheck.IsChecked == true,
+                filename = true,
+                visual = true,
                 speech = SpeechCheck.IsChecked == true,
                 speechModel = _speechModel,
                 ocr = OcrCheck.IsChecked == true,
-                helpImprove = HelpImproveToggle.IsOn,
                 automaticUpdates = AutomaticUpdatesToggle.IsOn,
-                phoneticExpansion = phonetic
+                phoneticExpansion = phonetic,
+                searchModelIdleMinutes = Idle5Radio.IsChecked == true ? 5 : Idle30Radio.IsChecked == true ? 30 : 10
             });
             SaveStatus.Text = "已保存";
         }
@@ -323,5 +315,46 @@ public sealed partial class SettingsPage : Page
     {
         Directory.CreateDirectory(AppPaths.Root);
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppPaths.Root) { UseShellExecute = true });
+    }
+
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateProgress.Visibility = Visibility.Visible;
+        UpdateStatusText.Text = "正在验证稳定通道签名…";
+        try
+        {
+            var result = await AgentClient.RequestAsync("update.check", new { interactive = true });
+            UpdateStatusText.Text = result.GetProperty("message").GetString() ?? "检查完成";
+            if (result.TryGetProperty("available", out var available) && available.GetBoolean())
+            {
+                var version = result.GetProperty("version").GetString()!;
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = XamlRoot, Title = $"版本 {version} 可用",
+                    Content = result.GetProperty("releaseNotes").GetString(),
+                    PrimaryButtonText = "立即更新", SecondaryButtonText = "稍后",
+                    CloseButtonText = "跳过此版本", DefaultButton = ContentDialogButton.Primary
+                };
+                var choice = await dialog.ShowAsync();
+                if (choice == ContentDialogResult.Primary)
+                {
+                    UpdateStatusText.Text = "正在下载并验证更新；完成后应用会请求安全退出。";
+                    UpdateProgress.IsIndeterminate = false;
+                    var apply = AgentClient.RequestAsync("update.apply");
+                    while (!apply.IsCompleted)
+                    {
+                        await Task.Delay(500);
+                        var status = await AgentClient.RequestAsync("update.status");
+                        if (status.TryGetProperty("progress", out var progress))
+                            UpdateProgress.Value = Math.Clamp(progress.GetDouble() * 100, 0, 100);
+                    }
+                    await apply;
+                }
+                else if (choice == ContentDialogResult.None)
+                    await AgentClient.RequestAsync("update.skip", new { version });
+            }
+        }
+        catch (Exception error) { UpdateStatusText.Text = $"检查更新失败：{error.Message}"; }
+        finally { UpdateProgress.Visibility = Visibility.Collapsed; }
     }
 }

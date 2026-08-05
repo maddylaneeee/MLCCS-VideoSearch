@@ -4,14 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mlccs-video-search-worker"
-version = "0.1.0"
+version = "1.0.0"
 description = "Private local ML worker for MLCCS Video Search"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary application glue; third-party components retain their licenses" }
 dependencies = []
-
-[project.scripts]
-mlccs-worker = "mlccs_worker.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mlccs_worker"]
@@ -23,4 +20,3 @@ line-length = 110
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
-
