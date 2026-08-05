@@ -621,8 +621,14 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             if not detection_root.is_dir() or not recognition_root.is_dir():
                 raise RuntimeError("选装 OCR 模型尚未安装")
             try:
-                ocr_engine = PaddleOCR(text_detection_model_dir=str(detection_root), text_recognition_model_dir=str(recognition_root),
-                                       use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False, lang="ch")
+                ocr_engine = PaddleOCR(
+                    text_detection_model_name="PP-OCRv5_mobile_det",
+                    text_detection_model_dir=str(detection_root),
+                    text_recognition_model_name="PP-OCRv5_mobile_rec",
+                    text_recognition_model_dir=str(recognition_root),
+                    use_doc_orientation_classify=False, use_doc_unwarping=False,
+                    use_textline_orientation=False,
+                )
             except TypeError as error:
                 if "PaddlePredictorOption" in str(error):
                     raise RuntimeError("OCR 运行组件版本不兼容。请更新应用后重新索引画面文字。") from error
