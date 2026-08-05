@@ -23,13 +23,13 @@ MLCCS Video Search `v1.0.0` 是一款仅在本机运行的 Windows 视频语义�
 
 安装器按接近裸机的 Windows 10/11 环境设计，不要求预装 winget、.NET、Windows App Runtime、Python、CUDA Toolkit、浏览器或第三方包管理器。开始下载大型组件前，它会复检 Windows 版本/架构、Visual C++ x64 运行库、Media Foundation、DirectX/WinUI 所需系统 DLL 以及网络/加密基础组件；缺失项只从 Microsoft 官方入口或 Windows Update 下载，验证 Microsoft Authenticode，并在安装或 DISM/SFC 修复后再次检查。Windows N/KN 会补装 Media Feature Pack；需要重启时会保留下载并明确停止。应用所需的 .NET 10、Windows App SDK、Python/PyTorch CUDA 和 Qdrant 均随签名程序载荷提供。NVIDIA 驱动仍须按实际 GPU/OEM 安装，安装器不会猜测并下载不匹配的驱动。
 
-本项目不使用 Windows Authenticode。Windows SmartScreen 可能显示“未知发布者”。请只从上述正式地址或 GitHub Release 下载，并在 PowerShell 中核对 SHA-256：
+本项目不使用 Windows Authenticode。Windows SmartScreen 可能显示“未知发布者”。请只从上述正式地址下载，并在 PowerShell 中核对 SHA-256：
 
 ```powershell
 Get-FileHash .\MLCCS-VideoSearch-Online-Setup-1.0.0.exe -Algorithm SHA256
 ```
 
-将结果与 Release 中的 `SHA256SUMS` 对照后再运行安装器。
+将结果与[发布的 SHA256SUMS](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/SHA256SUMS.txt)对照后再运行安装器。
 
 ## 已实现功能
 

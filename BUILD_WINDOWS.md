@@ -4,7 +4,7 @@ These instructions start from a clean x64 Windows 10/11 machine with no Python, 
 
 ## 1. Prepare an isolated source tree
 
-Use a clean checkout of the frozen Release Candidate. On MLCCS, keep source, tools, caches and outputs under an isolated `R:\MLCCS-VideoSearch-v1` directory. Record the commit SHA before building.
+Use a clean checkout of the frozen release candidate. Keep source, tools, caches, and outputs in an isolated non-system directory such as `D:\MLCCS-VideoSearch-v1`. Record the commit SHA before building.
 
 ## 2. Install the build toolchain
 

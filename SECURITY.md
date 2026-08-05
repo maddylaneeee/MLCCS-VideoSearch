@@ -12,7 +12,7 @@ Use GitHub private vulnerability reporting for this repository. Do not open a pu
 
 Windows binaries are not Authenticode-signed. Each official release publishes `SHA256SUMS`; the online installer and updater also embed the production P-256 public key and reject a Manifest unless its SHA-256/P1363 signature is valid. Components are verified by archive size/SHA-256 and by every extracted file hash.
 
-The production private key is never stored in Git, CI, GitHub Actions, MLCCS, CRC, FileShare, or the web server. It is used only on the release Mac from encrypted PKCS#8 storage.
+The production private key is never stored in Git, CI, GitHub Actions, build machines, distribution infrastructure, or the web server. It is used only on the approved secure signing workstation from encrypted PKCS#8 storage.
 
 ## Local-data boundary
 

@@ -17,3 +17,8 @@ release/downloads/
 *.pfx
 *.pem
 *.key
+.env
+.env.*
+docs/internal/
+docs/history/
+retained/

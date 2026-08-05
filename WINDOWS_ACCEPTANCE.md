@@ -2,22 +2,11 @@
 
 Run this gate once against a frozen Release Candidate. Record commit SHA, commands, machine specification, Windows build, GPU/driver, artifact hashes, logs, screenshots, start/end times, and outcomes. No 30-minute or 72-hour endurance run is required.
 
-## MLCCS basic gate
+## Automated validation
 
-MLCCS (Server 2016 build 14393, Quadro P600 2 GB, driver 475.14) is not a supported v1 runtime and must never be reported as passing UI/CUDA acceptance. In an isolated `R:\` directory it may perform:
+Run repository, version, schema, C# and Python tests on a clean Windows build environment. Validate Manifest tampering, wrong-key and altered-field rejection, archive size/hash/file-hash checks, path-traversal rejection, interrupted downloads, Range resume, pause/resume, package layout, SBOM/license inventory, and rollback.
 
-- repository/version/schema validation, C# and Python tests;
-- Windows build, installer/updater build where the OS/toolchain permits;
-- Manifest tamper, wrong-key, altered-field, archive size/hash/file-hash and path-traversal rejection;
-- download interruption, Range resume, pause/resume, package-layout, SBOM/license, rollback tests.
-
-If its OS blocks a complete Windows build, record the exact reason once and request approval to use CRC for the remaining acceptance.
-
-## CRC Windows/NVIDIA gate
-
-CRC access requires the user's explicit approval through the native approval flow. After approval, complete the CRC skill's three short E2EE command and Chinese-output gates before transferring or executing the candidate.
-
-On a supported Windows 10 1809+/11 x64 NVIDIA system with at least 4 GB VRAM:
+Run the end-to-end product gate on a supported Windows 10 1809+/11 x64 NVIDIA system with at least 4 GB VRAM:
 
 1. Start the published single-file installer with `PATH` cleared and no reliance on system `dotnet`, winget, PowerShell modules, Windows App Runtime, Python, CUDA Toolkit, browser, or third-party package manager. Generate a prerequisite report and verify Windows version/architecture, VC++ x64 runtime, Media Foundation, DirectX/WinUI, networking, and cryptography checks. Exercise the official Microsoft VC++ download, final-host allowlist, Authenticode publisher verification, and safe rejection of a replaced/untrusted executable. On an N/KN or otherwise deficient disposable fixture when available, verify Media Feature Pack or DISM/SFC repair, reboot handling, and successful post-repair recheck; do not remove healthy Windows components merely to manufacture this fixture.
 2. Verify clean online install, immutable component layout, shortcut target, uninstall, and confirmed Feedback-state reset that never deletes source videos.
@@ -30,7 +19,7 @@ On a supported Windows 10 1809+/11 x64 NVIDIA system with at least 4 GB VRAM:
 
 ## One manual UI gate
 
-After automated checks pass, send one consolidated ringing Codex Monitor checklist. The user must explicitly approve:
+After automated checks pass, complete one consolidated manual checklist. The release owner must explicitly approve:
 
 - install and first-run hardware guidance;
 - Search, Library, Jobs, Settings and About behavior;
@@ -42,6 +31,6 @@ Text clipping, overlap, missing scroll/focus, unlabeled errors, inactive control
 
 ## Publication gate
 
-After acceptance, generate payloads on Windows and return only unsigned Manifest metadata to the Mac. Sign on the Mac with the production key, publish component payloads, installer, then versioned signed Manifest. Re-download public files and verify size, SHA-256, signature, Range and component HEAD responses. Merge the release PR, require green `main` CI, create immutable tag/GitHub Release `v1.0.0`, and publish signed stable `latest.json` last.
+After acceptance, generate payloads on Windows and return only unsigned Manifest metadata to the secure signing workstation. Sign with the production key, publish component payloads, installer, then the versioned signed Manifest. Re-download public files and verify size, SHA-256, signature, Range and component HEAD responses. Merge the release PR, require green `main` CI, create immutable tag/GitHub Release `v1.0.0`, and publish signed stable `latest.json` last.
 
 Required evidence: frozen commit SHA, artifact hashes, tests, search metrics, memory/PID records, screenshots and manual approval, SBOM/license inventory, tamper/rollback records, public-download verification and remaining known limitations.

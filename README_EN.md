@@ -21,13 +21,13 @@ Required first-install components are the app core, private Python/PyTorch CUDA 
 
 The installer is designed for a nearly bare Windows 10/11 machine. It does not assume winget, .NET, Windows App Runtime, Python, the CUDA Toolkit, a browser, or a third-party package manager. Before large component downloads, it checks the Windows version/architecture, Visual C++ x64 runtime, Media Foundation, DirectX/WinUI system DLLs, and core networking/cryptography files. Missing items are obtained only from official Microsoft endpoints or Windows Update, the Microsoft Authenticode signature is verified, and every repair is rechecked. Windows N/KN receives the Media Feature Pack; a required restart stops setup clearly while preserving downloads. .NET 10, Windows App SDK, Python/PyTorch CUDA, and Qdrant ship in the signed payload. The NVIDIA driver still must match the actual GPU/OEM, so setup does not guess and download a potentially incompatible driver.
 
-The project does not use Windows Authenticode, so SmartScreen may show an unknown-publisher warning. Download only from the official link or GitHub Release and verify the installer:
+The project does not use Windows Authenticode, so SmartScreen may show an unknown-publisher warning. Download only from the official link and verify the installer:
 
 ```powershell
 Get-FileHash .\MLCCS-VideoSearch-Online-Setup-1.0.0.exe -Algorithm SHA256
 ```
 
-Compare the result with the Release `SHA256SUMS` before running it.
+Compare the result with the published [SHA256SUMS](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/SHA256SUMS.txt) before running it.
 
 ## Implemented behavior
 

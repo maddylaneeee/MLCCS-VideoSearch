@@ -14,5 +14,3 @@
 - Added deterministic unchanged-file reuse so Agent restarts do not re-index an entire library, plus complete and backward-compatible task-page hardware status fields.
 - Removed all v1 diagnostics-upload, telemetry, image-library, Beta, and unfinished UI surfaces.
 - Added release CI, CodeQL, Dependabot, repository governance, deterministic acceptance data, SBOM/license packaging, and bilingual release documentation.
-
-Historical Feedback records are retained under `docs/history` and are not current product documentation.
