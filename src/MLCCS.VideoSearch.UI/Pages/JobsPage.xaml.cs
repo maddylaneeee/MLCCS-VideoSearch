@@ -35,6 +35,8 @@ public sealed partial class JobsPage : Page
             var agent = await AgentClient.RequestAsync("agent.status");
             var configured = agent.GetProperty("configured").GetBoolean();
             var paused = agent.GetProperty("paused").GetBoolean();
+            var indexControl = agent.TryGetProperty("indexControl", out var controlNode) &&
+                               controlNode.ValueKind == JsonValueKind.String ? controlNode.GetString() : null;
             PauseButton.Content = paused ? "继续" : "暂停";
             if (agent.TryGetProperty("modelDownloadStatus", out var modelStatus) &&
                 modelStatus.ValueKind == JsonValueKind.Object)
@@ -126,11 +128,20 @@ public sealed partial class JobsPage : Page
             RealProgress.Value = progress * 100;
             ProgressText.Text = progress.ToString("P1");
             var staleWorkerStatus = running && activeStartedUtc is not null && workerUpdatedUtc < activeStartedUtc;
-            StatusTitleText.Text = staleWorkerStatus ? "正在启动新一轮自动索引" :
+            StatusTitleText.Text = indexControl == "cancelRequested" ? "正在取消索引" :
+                indexControl == "cancelled" || stage == "Cancelled" ? "索引已取消" :
+                paused ? "暂停请求已提交" :
+                staleWorkerStatus ? "正在启动新一轮自动索引" :
                 stage == "Completed" ? "索引已完成" :
                 stage == "Paused" ? "索引已暂停" :
                 stage == "Failed" ? "索引失败" : $"正在索引：{stageLabel}";
-            StatusMessageText.Text = staleWorkerStatus
+            StatusMessageText.Text = indexControl == "cancelRequested"
+                ? "正在安全停止当前工作；若后台调用未及时返回，会在几秒内强制结束。"
+                : indexControl == "cancelled" || stage == "Cancelled"
+                    ? "当前索引已停止；已完成的内容会保留。"
+                : paused
+                    ? "暂停请求已提交；当前处理步骤结束后将暂停。"
+                : staleWorkerStatus
                 ? "检测到资源库变化，Worker 正在加载；首份新状态写入后将显示实时进度。"
                 : workTotal > 0
                     ? $"总进度 {progress:P1} · 当前 {stageLabel} {stageCompleted:N0}/{stageTotal:N0} · 已完成 {workCompleted:N0}/{workTotal:N0} 项"
@@ -171,13 +182,18 @@ public sealed partial class JobsPage : Page
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
+        var pause = PauseButton.Content?.ToString() != "继续";
         try
         {
-            var pause = PauseButton.Content?.ToString() != "继续";
+            PauseButton.IsEnabled = false;
+            PauseButton.Content = pause ? "继续" : "暂停";
+            StatusTitleText.Text = pause ? "暂停请求已提交" : "正在继续索引";
+            StatusMessageText.Text = pause ? "当前处理步骤结束后将暂停。" : "正在恢复索引。";
             await AgentClient.RequestAsync(pause ? "index.pause" : "index.resume");
             await RefreshStatusAsync();
         }
         catch (Exception error) { ShowError(error); }
+        finally { PauseButton.IsEnabled = true; }
     }
 
     private async void Cancel_Click(object sender, RoutedEventArgs e)
@@ -192,8 +208,21 @@ public sealed partial class JobsPage : Page
             DefaultButton = ContentDialogButton.Close
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        try { await AgentClient.RequestAsync("index.cancel"); }
+        try
+        {
+            CancelButton.IsEnabled = false;
+            CancelButton.Content = "正在取消…";
+            StatusTitleText.Text = "正在取消索引";
+            StatusMessageText.Text = "正在安全停止当前工作。";
+            await AgentClient.RequestAsync("index.cancel");
+            await RefreshStatusAsync();
+        }
         catch (Exception error) { ShowError(error); }
+        finally
+        {
+            CancelButton.IsEnabled = true;
+            CancelButton.Content = "取消当前任务";
+        }
     }
 
     private async void Rescan_Click(object sender, RoutedEventArgs e)

@@ -464,25 +464,33 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
         stage_completed += 1
         status(stage, current)
 
+    def control_checkpoint(current: Path | None = None) -> None:
+        """Make UI pause/cancel controls observable between bounded units of work."""
+        if cancel_path.exists():
+            raise KeyboardInterrupt
+        if not pause_path.exists():
+            return
+        status("Paused", current)
+        while pause_path.exists():
+            if cancel_path.exists():
+                raise KeyboardInterrupt
+            time.sleep(0.1)
+        status(active_stage, current)
+
     def note_decoded_frame() -> None:
         nonlocal decoded_frames, last_status_emit
+        control_checkpoint(active_visual_path)
         decoded_frames += 1
         now = time.monotonic()
         if now - last_status_emit >= 0.75:
             last_status_emit = now
             status("Visual", active_visual_path)
 
-    def wait_if_paused() -> None:
-        while pause_path.exists() and not cancel_path.exists():
-            time.sleep(0.25)
-
     model = None
     try:
         begin_stage("Visual")
         for path in files:
-            if cancel_path.exists():
-                raise KeyboardInterrupt
-            wait_if_paused()
+            control_checkpoint(path)
             status("Visual", path)
             asset_id = _stable_id("asset", str(path.resolve()).casefold())
             try:
@@ -522,6 +530,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     tensors = torch.stack([_clip_tensor(rgb) for _, rgb, _ in representatives])
                     chunks = []
                     for offset in range(0, len(tensors), effective_batch):
+                        control_checkpoint(path)
                         with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16):
                             chunks.append(model.encode_image(tensors[offset:offset + effective_batch].pin_memory().to("cuda:0"), normalize=True).float().cpu().numpy())
                     vector = np.concatenate(chunks).mean(axis=0)
@@ -572,12 +581,14 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
         if speech_enabled:
             begin_stage("Speech")
             status("LoadingSpeechModel")
+            control_checkpoint()
             from faster_whisper import WhisperModel
             whisper_root = extra_models_root / speech_model
             if not whisper_root.is_dir():
                 raise RuntimeError("所选 Whisper 模型尚未安装")
             whisper = WhisperModel(str(whisper_root), device="cuda", compute_type="int8_float16", local_files_only=True)
             for path in files:
+                control_checkpoint(path)
                 status("Speech", path)
                 asset_row = connection.execute("SELECT asset_id,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
                 if not asset_row or asset_row[1] == "Failed":
@@ -589,6 +600,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     connection.execute("DELETE FROM transcript_segments WHERE asset_id=?", (asset_id,))
                     segments, _ = whisper.transcribe(str(path), vad_filter=True, word_timestamps=True, beam_size=5)
                     for segment in segments:
+                        control_checkpoint(path)
                         text = segment.text.strip()
                         if not text:
                             continue
@@ -615,6 +627,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
         if ocr_enabled:
             begin_stage("Ocr")
             status("LoadingOcrModel")
+            control_checkpoint()
             from paddleocr import PaddleOCR
             detection_root = ocr_models_root / "ppocrv5-mobile-det"
             recognition_root = ocr_models_root / "ppocrv5-mobile-rec"
@@ -634,6 +647,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     raise RuntimeError("OCR 运行组件版本不兼容。请更新应用后重新索引画面文字。") from error
                 raise
             for path in files:
+                control_checkpoint(path)
                 status("Ocr", path)
                 asset_row = connection.execute("SELECT asset_id,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
                 if not asset_row or asset_row[1] == "Failed":
@@ -645,9 +659,10 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     connection.execute("DELETE FROM ocr_observations WHERE asset_id=?", (asset_id,))
                     frames = connection.execute("SELECT representative_json,thumbnail_path FROM visual_segments WHERE asset_id=?", (asset_id,)).fetchall()
                     for representatives, thumbnail in frames:
+                        control_checkpoint(path)
                         timestamp_ms = json.loads(representatives)[0]["timestampMs"]
-                        predictions = list(ocr_engine.predict(str(thumbnail)))
-                        for prediction in predictions:
+                        for prediction in ocr_engine.predict(str(thumbnail)):
+                            control_checkpoint(path)
                             value = prediction.json() if callable(prediction.json) else prediction.json
                             result = value.get("res", value)
                             for index, text in enumerate(result.get("rec_texts", [])):
@@ -678,9 +693,11 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
 
         begin_stage("Text")
         status("LoadingTextModel")
+        control_checkpoint()
         from sentence_transformers import SentenceTransformer
         bge = SentenceTransformer(str(bge_root), device="cuda")
         for path in files:
+            control_checkpoint(path)
             status("Text", path)
             asset_row = connection.execute("SELECT asset_id,name,status FROM media_assets WHERE media_path=?", (str(path),)).fetchone()
             if not asset_row or asset_row[2] != "Indexed":
@@ -690,6 +707,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
             connection.execute("DELETE FROM speech_windows WHERE asset_id=?", (asset_id,))
             speech_rows = connection.execute("SELECT id,start_ms,end_ms,original_text FROM transcript_segments WHERE asset_id=? ORDER BY start_ms", (asset_id,)).fetchall()
             for start_ms, end_ms, group in _speech_window_groups(speech_rows):
+                control_checkpoint(path)
                 text = " ".join(item[3] for item in group)
                 window_id = _stable_id("speech-window", f"{asset_id}|{start_ms}|{end_ms}|{BGE_VERSION}")
                 connection.execute("INSERT INTO speech_windows VALUES(?,?,?,?,?,?,?,?)",
@@ -699,6 +717,7 @@ def run(library: Path, data_root: Path, models_root: Path, text_models_root: Pat
                     "startMs": start_ms, "endMs": end_ms, "algorithmVersion": 1, "modelVersion": BGE_VERSION})
             for ocr_id, timestamp_ms, text, confidence in connection.execute(
                     "SELECT id,timestamp_ms,original_text,confidence FROM ocr_observations WHERE asset_id=?", (asset_id,)):
+                control_checkpoint(path)
                 vector = bge.encode(text, normalize_embeddings=True)
                 _queue_vector(connection, "ocr_v1", ocr_id, vector, {"assetId": asset_id, "ocrId": ocr_id,
                     "timestampMs": timestamp_ms, "algorithmVersion": 1, "modelVersion": BGE_VERSION})

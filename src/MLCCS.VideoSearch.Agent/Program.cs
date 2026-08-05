@@ -65,6 +65,7 @@ internal sealed class AgentHost : ApplicationContext
     private readonly Dictionary<string, DateTime> _scheduledLibraryChanges = new(StringComparer.OrdinalIgnoreCase);
     private DateTimeOffset? _activeIndexStartedUtc;
     private string? _activeLibrary;
+    private string? _indexControl;
     private AgentConfiguration _configuration = new();
     private string _configurationFingerprint = "";
     private Process? _indexer;
@@ -255,8 +256,13 @@ internal sealed class AgentHost : ApplicationContext
             catch (JsonException) { }
         }
         int pendingLibraries;
+        string? indexControl;
         int scheduledLibraryChanges;
-        lock (_indexerGate) pendingLibraries = _pendingLibraries.Count;
+        lock (_indexerGate)
+        {
+            pendingLibraries = _pendingLibraries.Count;
+            indexControl = _indexControl;
+        }
         lock (_watcherGate) scheduledLibraryChanges = _scheduledLibraryChanges.Count;
         return new
         {
@@ -269,6 +275,7 @@ internal sealed class AgentHost : ApplicationContext
             scheduledLibraryChanges,
             activeIndexStartedUtc = _activeIndexStartedUtc,
             paused = File.Exists(Path.Combine(_root, "real-index.pause")),
+            indexControl,
             workerStatus,
             modelDownloadStatus,
             hardware = _hardwareStatus,
@@ -1028,6 +1035,7 @@ internal sealed class AgentHost : ApplicationContext
         }
         File.Delete(Path.Combine(_root, "real-index.cancel"));
         File.Delete(Path.Combine(_root, "real-index.pause"));
+        _indexControl = null;
         var start = new ProcessStartInfo
         {
             FileName = python,
@@ -1069,6 +1077,7 @@ internal sealed class AgentHost : ApplicationContext
                 _indexer = null;
                 _activeIndexStartedUtc = null;
                 _activeLibrary = null;
+                if (_indexControl == "cancelRequested") _indexControl = "cancelled";
                 if (!_configuration.Libraries.Contains(library, StringComparer.OrdinalIgnoreCase))
                 {
                     try { RemoveLibraryIndex(library); }
@@ -1138,19 +1147,43 @@ internal sealed class AgentHost : ApplicationContext
     {
         Directory.CreateDirectory(_root);
         File.WriteAllText(Path.Combine(_root, "real-index.pause"), DateTimeOffset.UtcNow.ToString("O"));
-        return new { paused = true };
+        lock (_indexerGate) _indexControl = "pauseRequested";
+        return new { paused = true, message = "暂停请求已提交" };
     }
 
     private object Resume()
     {
         File.Delete(Path.Combine(_root, "real-index.pause"));
-        return new { paused = false };
+        lock (_indexerGate) _indexControl = null;
+        return new { paused = false, message = "继续索引" };
     }
 
     private object Cancel()
     {
+        Process? indexer;
+        lock (_indexerGate)
+        {
+            _pendingLibraries.Clear();
+            _indexControl = "cancelRequested";
+            indexer = _indexer;
+        }
+        lock (_watcherGate) _scheduledLibraryChanges.Clear();
         File.WriteAllText(Path.Combine(_root, "real-index.cancel"), DateTimeOffset.UtcNow.ToString("O"));
-        return new { cancelled = true };
+        if (indexer is { HasExited: false }) _ = StopIndexerAfterGracePeriodAsync(indexer);
+        return new { cancelled = true, message = "正在取消索引" };
+    }
+
+    private static async Task StopIndexerAfterGracePeriodAsync(Process indexer)
+    {
+        // The worker sees the cancel marker at frequent safe checkpoints. A bounded
+        // fallback prevents a driver/model call from making the UI appear unresponsive.
+        await Task.Delay(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+        try
+        {
+            if (!indexer.HasExited) indexer.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException) { }
+        catch (System.ComponentModel.Win32Exception) { }
     }
 
     private static NamedPipeServerStream CreatePipe(string pipeName)
