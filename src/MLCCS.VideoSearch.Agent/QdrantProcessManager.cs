@@ -12,6 +12,7 @@ internal sealed class QdrantProcessManager : IDisposable
 {
     private readonly string _root;
     private readonly string _releaseRoot;
+    private readonly string _ownerPath;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Process? _process;
     private int _port;
@@ -21,6 +22,7 @@ internal sealed class QdrantProcessManager : IDisposable
     {
         _root = Path.Combine(root, "qdrant");
         _releaseRoot = releaseRoot;
+        _ownerPath = Path.Combine(_root, "managed-process.json");
     }
 
     public bool Running => _process is { HasExited: false };
@@ -34,6 +36,7 @@ internal sealed class QdrantProcessManager : IDisposable
         try
         {
             if (Running && await IsHealthyAsync(cancellationToken)) return;
+            StopRecordedOrphan();
             StopCore();
             Exception? firstFailure = null;
             for (var attempt = 0; attempt < 2; attempt++)
@@ -75,6 +78,7 @@ internal sealed class QdrantProcessManager : IDisposable
         start.Environment["QDRANT__STORAGE__STORAGE_PATH"] = Path.Combine(_root, "storage");
         start.Environment["QDRANT__LOG_LEVEL"] = "WARN";
         _process = Process.Start(start) ?? throw new InvalidOperationException("Unable to start private Qdrant.");
+        File.WriteAllText(_ownerPath, JsonSerializer.Serialize(new { pid = _process.Id, executable }));
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
         var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
@@ -183,6 +187,43 @@ internal sealed class QdrantProcessManager : IDisposable
         _process?.Dispose();
         _process = null;
         _port = 0;
+        TryDeleteOwnerRecord();
+    }
+
+    private void StopRecordedOrphan()
+    {
+        if (!File.Exists(_ownerPath)) return;
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(_ownerPath));
+            var pid = document.RootElement.GetProperty("pid").GetInt32();
+            var executable = document.RootElement.GetProperty("executable").GetString();
+            var expected = ResolveExecutable();
+            if (!string.Equals(Path.GetFullPath(executable ?? ""), Path.GetFullPath(expected),
+                    StringComparison.OrdinalIgnoreCase))
+                return;
+            using var process = Process.GetProcessById(pid);
+            var actual = process.MainModule?.FileName;
+            if (!string.Equals(Path.GetFullPath(actual ?? ""), Path.GetFullPath(expected),
+                    StringComparison.OrdinalIgnoreCase))
+                return;
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit(5000);
+        }
+        catch (ArgumentException) { }
+        catch (InvalidOperationException) { }
+        catch (JsonException) { }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        catch (System.ComponentModel.Win32Exception) { }
+        finally { TryDeleteOwnerRecord(); }
+    }
+
+    private void TryDeleteOwnerRecord()
+    {
+        try { File.Delete(_ownerPath); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     public void Dispose()
