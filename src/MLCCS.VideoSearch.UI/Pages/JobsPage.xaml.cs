@@ -87,8 +87,10 @@ public sealed partial class JobsPage : Page
                 ? stageLabelValue.GetString() ?? stage : stage;
             var progress = root.TryGetProperty("progress", out var progressValue) && progressValue.ValueKind == JsonValueKind.Number
                 ? Math.Clamp(progressValue.GetDouble(), 0, 1) : 0;
-            var frames = root.TryGetProperty("segmentsIndexed", out var segmentsValue)
+            var frames = root.TryGetProperty("segmentsIndexed", out var segmentsValue) && segmentsValue.ValueKind == JsonValueKind.Number
                 ? segmentsValue.GetInt64() : 0;
+            var completed = root.TryGetProperty("filesCompleted", out var completedValue) && completedValue.ValueKind == JsonValueKind.Number
+                ? completedValue.GetInt32() : 0;
             var rate = root.TryGetProperty("framesPerSecond", out var rateValue) && rateValue.ValueKind == JsonValueKind.Number
                 ? rateValue.GetDouble() : 0;
             var workCompleted = root.TryGetProperty("workCompleted", out var workCompletedValue) && workCompletedValue.ValueKind == JsonValueKind.Number
@@ -101,9 +103,10 @@ public sealed partial class JobsPage : Page
                 ? stageTotalValue.GetInt32() : 0;
             var current = root.TryGetProperty("currentFile", out var file) && file.ValueKind == JsonValueKind.String
                 ? Path.GetFileName(file.GetString()) : "—";
-            var completed = root.TryGetProperty("filesCompleted", out var completedValue) ? completedValue.GetInt32() : 0;
-            var failed = root.TryGetProperty("filesFailed", out var failedValue) ? failedValue.GetInt32() : 0;
-            var eta = root.TryGetProperty("etaSeconds", out var etaValue) ? etaValue.GetDouble() : 0;
+            var failed = root.TryGetProperty("filesFailed", out var failedValue) && failedValue.ValueKind == JsonValueKind.Number
+                ? failedValue.GetInt32() : 0;
+            var eta = root.TryGetProperty("etaSeconds", out var etaValue) && etaValue.ValueKind == JsonValueKind.Number
+                ? etaValue.GetDouble() : 0;
             var updatedUtc = root.TryGetProperty("updatedUtc", out var updatedValue) &&
                              updatedValue.ValueKind == JsonValueKind.String
                 ? updatedValue.GetString() : null;
