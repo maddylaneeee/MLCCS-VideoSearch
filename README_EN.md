@@ -1,51 +1,101 @@
-# MLCCS Video Search
+<p align="center">
+  <img src="assets/MLCCS.VideoSearch.png" width="160" alt="MLCCS Video Search logo">
+</p>
 
-MLCCS Video Search `v1.0.0` is a local-only Windows application for finding videos by filename, visual content, speech, and on-screen text, then playing from the matching timestamp.
+<h1 align="center">MLCCS Video Search</h1>
 
-[中文 README](README.md)
+<p align="center">
+  A local-first Windows video search tool. Find the right moment with a filename, a visual clue, spoken words, or text that appears on screen.
+</p>
 
-## Requirements
+<p align="center">
+  <a href="#download-and-install">Download</a> ·
+  <a href="#what-it-does">Features</a> ·
+  <a href="#system-requirements">Requirements</a> ·
+  <a href="#privacy-and-networking">Privacy</a> ·
+  <a href="README.md">中文</a>
+</p>
 
-- Windows 10 1809 (build 17763) or later, or Windows 11, x64.
-- An NVIDIA GPU with at least 4 GB VRAM.
-- A driver compatible with the bundled `PyTorch 2.7.1+cu128` runtime.
-- The CUDA Toolkit is not required; a compatible NVIDIA driver is required.
+## The short version
 
-Installation is allowed on an unsupported machine so the driver can be updated. First launch reports the detected Windows build, GPU, VRAM, driver, and CUDA state. Indexing and search are hard-blocked until all requirements pass, while library browsing, settings, logs, and updates remain accessible. v1.0.0 has no public CPU, AMD, Intel GPU, or sub-4 GB fallback.
+When you remember what happened in a video but not its filename, MLCCS Video Search builds a searchable index of your local library and takes you straight to the matching timestamp.
 
-## Download and integrity
+| What you get | What it means |
+| --- | --- |
+| More than filename search | Search filenames, visuals, speech, on-screen text, and Chinese pinyin or phonetic matches. |
+| A useful result, not just a file | Each result includes its source and timestamp; open it directly at the matching moment. |
+| Data stays on your PC | Videos, paths, queries, transcripts, OCR text, thumbnails, and vectors are stored locally by default. |
+| Control over your library | Narrow results by library, extension, duration, modified date, and indexing status. |
+
+## What it does
+
+- **Search by what you remember.** Find a visual scene, a spoken phrase, or words shown in a frame—without needing an exact filename.
+- **Jump to the relevant moment.** Browse results in a list or grid, preview the matching timestamp, and seek there in the player.
+- **Show why something matched.** Results retain filename, visual, speech, and OCR sources so the match is easier to judge.
+- **Handle real libraries.** Sort by relevance, modified date, or filename. A damaged or unsupported video is marked as a file-level failure instead of stopping the whole library job.
+- **Use resources only when needed.** The search-model process and private Qdrant service stop after idle time and restart automatically for the next search or indexing task.
+- **Update with safeguards.** Updates require confirmation and use resumable downloads, per-file verification, health checks, and rollback.
+
+## How it works
+
+1. **Add a library** — choose a folder containing your videos.
+2. **Build the index** — the app analyzes visual scenes and, when enabled, processes speech and OCR text.
+3. **Search with a clue** — enter a filename, a visual description, something said in the video, or on-screen text.
+4. **Open the match** — inspect the match source and timestamp, then play, copy the path, or reveal the file in Explorer.
+
+## Download and install
 
 [Download MLCCS Video Search v1.0.0](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/MLCCS-VideoSearch-Online-Setup-1.0.0.exe)
 
-Required first-install components are the app core, private Python/PyTorch CUDA runtime, Qdrant Server v1.18.3, OpenCLIP Standard, and BGE Small: `5,458,820,128` bytes (about `5.084 GiB`) in total. The installer displays the exact signed download size and supports resume. Whisper is downloaded on demand; OCR is optional, and the v1.0.0 OCR package is `18,631,826` bytes (about `17.77 MiB`).
+The first installation downloads the app core, private Python/PyTorch CUDA runtime, Qdrant Server, OpenCLIP Standard, and BGE Small: `5,458,820,128` bytes (about `5.084 GiB`) in total. Setup shows the exact download size and can resume interrupted downloads. Whisper downloads on demand; OCR is optional and its v1.0.0 package is about `17.77 MiB`.
 
-The installer is designed for a nearly bare Windows 10/11 machine. It does not assume winget, .NET, Windows App Runtime, Python, the CUDA Toolkit, a browser, or a third-party package manager. Before large component downloads, it checks the Windows version/architecture, Visual C++ x64 runtime, Media Foundation, DirectX/WinUI system DLLs, and core networking/cryptography files. Missing items are obtained only from official Microsoft endpoints or Windows Update, the Microsoft Authenticode signature is verified, and every repair is rechecked. Windows N/KN receives the Media Feature Pack; a required restart stops setup clearly while preserving downloads. .NET 10, Windows App SDK, Python/PyTorch CUDA, and Qdrant ship in the signed payload. The NVIDIA driver still must match the actual GPU/OEM, so setup does not guess and download a potentially incompatible driver.
+The installer is designed for a nearly bare Windows 10/11 machine. It does not require winget, .NET, Windows App Runtime, Python, the CUDA Toolkit, a browser, or a third-party package manager in advance. Before large downloads, it checks the Windows components the app needs. Dependencies available from official Microsoft sources are signature-verified before installation. Windows N/KN receives the Media Feature Pack; when a restart is required, setup preserves downloaded content and explains the next step.
 
-The project does not use Windows Authenticode, so SmartScreen may show an unknown-publisher warning. Download only from the official link and verify the installer:
+> **Download-safety note:** This project does not yet use Windows Authenticode signing, so SmartScreen may show an unknown-publisher warning. Download only from the official link above and verify the SHA-256 before running the installer.
 
 ```powershell
 Get-FileHash .\MLCCS-VideoSearch-Online-Setup-1.0.0.exe -Algorithm SHA256
 ```
 
-Compare the result with the published [SHA256SUMS](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/SHA256SUMS.txt) before running it.
+Compare the result with the published [SHA256SUMS](https://lixinchen.ca/docs/mlccs-video-search/1.0.0/SHA256SUMS.txt).
 
-## Implemented behavior
+## System requirements
 
-- Approximately 2 FPS scene analysis with threshold 27, 2–8 second windows, and extra representatives for high motion.
-- OpenCLIP Standard visual vectors, BGE Small Chinese text vectors, and a private Qdrant Server; SQLite remains authoritative for paths, source text, FTS5, and the vector Outbox.
-- Filename, speech, OCR, pinyin, and phonetic FTS plus Qdrant semantic recall, fused with RRF and per-source timestamp/score explanations.
-- Library, extension, duration, modification-date, and indexing-status filters; relevance, newest, and filename sorting.
-- List/grid browsing, timestamp previews, playback seek, copy path, and reveal in Explorer.
-- Whole-process search-model release after 5/10/30 idle minutes. Private Qdrant also stops when no indexing or search task needs it, then restarts automatically.
-- Signed update checks, explicit user confirmation, resumable download, per-file verification, atomic `current/previous` swap, health check, and rollback.
-- Corrupt or unsupported videos fail at file scope without failing the library job.
+- Windows 10 1809 (build 17763) or later, or Windows 11, x64.
+- An NVIDIA GPU with 4 GB VRAM recommended; the app requires at least `3.75 GiB` reported by the driver.
+- An NVIDIA driver that lets the bundled `PyTorch 2.7.1+cu128` runtime report CUDA as available.
+- No separate CUDA Toolkit installation is required; a compatible NVIDIA driver is required.
+
+Installation can still finish on an unsupported machine so you can update the driver first. On first launch, the app reports the detected Windows build, GPU, VRAM, driver, and CUDA state. Until requirements pass, indexing and search are blocked, while library browsing, settings, logs, and updates remain available.
+
+Version 1.0.0 does not provide a CPU, AMD GPU, Intel GPU, or below-`3.75 GiB`-reported-VRAM fallback for indexing or search.
 
 ## Privacy and networking
 
-Media, paths, queries, transcripts, OCR text, thumbnails, and vectors remain local. Qdrant binds only to a dynamic `127.0.0.1` port and stores only opaque IDs, times, and model/algorithm versions in payloads. v1.0.0 has no diagnostics upload, telemetry, or “help improve” network entry point.
+| Stays local | Connects only when you choose it |
+| --- | --- |
+| Media, paths, queries, transcripts, OCR text, thumbnails, and vectors | Downloading locked components or optional models; enabled automatic update checks; manually selecting “Check for updates” |
 
-Networking occurs only for locked component/optional model downloads and update checks. Disabling automatic checks prevents proactive update-channel requests. Redacted local logs can be opened from Settings.
+The private Qdrant Server binds only to a dynamically selected `127.0.0.1` port. Its payload contains only opaque IDs, timestamps, and model or algorithm versions. Version 1.0.0 does not transmit diagnostic data, include automatic telemetry, or provide a “help improve” network endpoint. With automatic checks disabled, the app does not proactively contact the update channel. Local logs are redacted and can be opened from Settings.
 
-Feedback settings, indexes, and model caches are not reused. Interactive setup requires confirmation before resetting them; silent setup rejects old state unless given the explicit reset flag. Reset and uninstall never delete source videos.
+## Updates, reset, and uninstall
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Updates never install or restart silently. The app keeps a rollback-ready previous version and runs a health check after switching.
+- Reset and uninstall never delete your source videos.
+- Settings, indexes, and on-demand models in the user-data directory are retained by default. Interactive setup asks before resetting existing data.
+
+## Technical overview
+
+For readers who want implementation detail: the app runs low-resolution scene analysis at roughly 2 FPS and keeps extra representative frames for high-motion segments. OpenCLIP Standard produces visual vectors; BGE Small produces Chinese text vectors. SQLite is authoritative for paths, source text, FTS5, and the vector Outbox, while a private Qdrant instance handles vector retrieval. Filename, speech, OCR, pinyin/phonetic FTS, and semantic recall are fused with RRF, retaining timestamp and score contributions from each source.
+
+## Development and documentation
+
+Windows build entry point:
+
+```powershell
+.\scripts\Build-Windows.ps1 -Configuration Release
+```
+
+Release gates require a warning-free Windows build, all automated tests, `Recall@10 ≥ 0.80` and `MRR ≥ 0.65` on a fixed dataset of at least 30 queries, plus NVIDIA/CUDA end-to-end and manual UI acceptance.
+
+More documentation: [Search](SEARCH.md) · [Indexing](INDEXING.md) · [Architecture](ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Support](SUPPORT.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
