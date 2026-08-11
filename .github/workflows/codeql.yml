@@ -20,10 +20,10 @@ jobs:
         language: ['csharp', 'python']
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
       - if: matrix.language == 'csharp'
         shell: powershell
         run: ./scripts/Build-Windows.ps1 -Configuration Release -SkipTests
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
